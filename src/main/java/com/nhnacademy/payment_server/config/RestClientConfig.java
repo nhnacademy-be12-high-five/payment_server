@@ -7,7 +7,6 @@ import org.springframework.web.client.RestClient;
 @Configuration
 public class RestClientConfig {
 
-    // Toss API와 통신하기 위한 RestClient Bean
     @Bean
     public RestClient tossRestClient() {
         return RestClient.builder()

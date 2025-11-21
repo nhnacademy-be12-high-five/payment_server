@@ -30,9 +30,6 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /*@Column(nullable = false)
-    private Long payMethodId;*/
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pay_method_id", nullable = false)
     private PaymentMethod paymentMethod;

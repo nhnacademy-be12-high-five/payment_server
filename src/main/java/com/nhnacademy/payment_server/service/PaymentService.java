@@ -11,6 +11,5 @@ public interface PaymentService {
      * DB 저장 (Payment Server)
      * 롤백 처리 (Toss 실패 시 포인트 환불)
      */
-
     PaymentConfirmResponse confirmPayment(PaymentConfirmRequest requestDto);
 }

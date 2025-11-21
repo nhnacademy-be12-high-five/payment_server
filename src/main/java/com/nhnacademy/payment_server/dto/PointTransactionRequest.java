@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PointTransactionRequest {
-    // 포인트 적립 사용 환불 요청 DTO
+    // 포인트 적립 사용 환불 요청을 위해 복사한 DTO
     private Long memberId;
-    private Long amount;        // 포인트 적립/사용/환불 액수
-    private String description; // 포인트 적립/사용/환불 사유
+    private Long amount;
+    private String description;
 }

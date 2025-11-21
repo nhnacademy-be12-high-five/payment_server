@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class PaymentConfirmResponse {
-    // 결제 승인 응답 DTO
     @Schema(description = "최종 승인 완료된 결제 번호", example = "1")
     private String paymentId;
     @Schema(description = "결제 상태", example = "DONE")

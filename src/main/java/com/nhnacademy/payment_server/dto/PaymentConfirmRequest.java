@@ -7,12 +7,10 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class PaymentConfirmRequest {
-    // 결제 승인을 요청하는 DTO
     @Schema(description = "Toss에서 받은 결제 식별 키", example = "tviva2024...")
     private String paymentKey;
     @Schema(description = "주문 서버에서 생성된 주문 번호", example = "1")
     private Long orderId;
-    //private String orderId; // 테스트용 임시
     @Schema(description = "주문 서버에서 생성된 최종 승인 요청할 금액", example = "50000")
     private Long amount;
 }
