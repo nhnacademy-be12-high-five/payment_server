@@ -1,0 +1,10 @@
+### 결제 승인 테스트 (멤버 서버 통신으로 포인트 차감)
+## paymentKey와 orderId는 테스트 결제 후 주소창 파라미터 넣기
+POST http://localhost:9004/api/payments/confirm
+Content-Type: application/json
+
+{
+  "paymentKey": "tviva2025112113260152Er5",
+  "orderId": 1,
+  "amount": 50000
+}
