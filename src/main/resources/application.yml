@@ -1,31 +1,11 @@
-server:
-  port: 9004
-
 spring:
   application:
-    name: payment-server
+    name: team5_payment_server
   config:
     import: "optional:configserver:"
-
-  datasource:
-    # payment_db로 접속
-    url: jdbc:mysql://localhost:3306/payment_db?serverTimezone=Asia/Seoul
-    username: root
-    password: 123123123
-    driver-class-name: com.mysql.cj.jdbc.Driver
-
-  cloud:
-    config:
-      enabled: false # config_server ?? ? ??
 
 # ▼ [필수 추가] 이 부분이 없으면 Docker가 주는 유레카 주소를 못 받습니다!
 eureka:
   client:
-    #enabled: false
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
-
-# Toss 설정 (로컬 임시)
-toss:
-  secretKey: ${TOSS_SECRET_KEY}
-  clientKey: ${TOSS_CLIENT_KEY}
