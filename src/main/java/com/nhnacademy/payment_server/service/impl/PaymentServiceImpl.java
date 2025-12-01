@@ -43,7 +43,7 @@ public class PaymentServiceImpl implements PaymentService {
         Long memberId = 1L;
         Long usePointAmount = 1000L;
         Long orderId = 1L;
-        String tossOrderId = "w13sb...";
+        String tossOrderId = "w13sb5AJA_wUP6OpVL_lk_1764576862215"; // html 테스트 시도마다 변경
 
         try{
             memberPointClient.usePoint(new PointTransactionRequest(memberId, usePointAmount, orderId));
