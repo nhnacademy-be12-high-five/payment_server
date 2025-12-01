@@ -2,7 +2,7 @@ package com.nhnacademy.payment_server.entity;
 
 public enum PaymentStatus {
     DONE,
-    CANCELLED,
+    CANCELED,
     ABORTED,
     EXPIRED
 }

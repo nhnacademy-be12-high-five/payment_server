@@ -1,4 +1,4 @@
-package com.nhnacademy.payment_server.dto;
+package com.nhnacademy.payment_server.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,5 +11,5 @@ public class PointTransactionRequest {
     // 포인트 적립 사용 환불 요청을 위해 복사한 DTO
     private Long memberId;
     private Long amount;
-    private String description;
+    private Long orderId;
 }

@@ -1,7 +1,9 @@
 package com.nhnacademy.payment_server.service;
 
-import com.nhnacademy.payment_server.dto.PaymentConfirmRequest;
-import com.nhnacademy.payment_server.dto.PaymentConfirmResponse;
+import com.nhnacademy.payment_server.dto.request.PaymentCancelRequest;
+import com.nhnacademy.payment_server.dto.request.PaymentConfirmRequest;
+import com.nhnacademy.payment_server.dto.response.PaymentCancelResponse;
+import com.nhnacademy.payment_server.dto.response.PaymentConfirmResponse;
 
 public interface PaymentService {
     /**
@@ -12,4 +14,5 @@ public interface PaymentService {
      * 롤백 처리 (Toss 실패 시 포인트 환불)
      */
     PaymentConfirmResponse confirmPayment(PaymentConfirmRequest requestDto);
+    PaymentCancelResponse cancelPayment(PaymentCancelRequest requestDto);
 }

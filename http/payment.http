@@ -1,0 +1,29 @@
+### 1. 결제 승인 테스트 (멤버 서버 통신으로 포인트 차감)
+## paymentKey와 orderId는 테스트 결제 후 주소창 파라미터 넣기
+POST http://localhost:9004/api/payments/confirm
+Content-Type: application/json
+
+{
+  "paymentKey": "tviva2025112113260152Er5",
+  "orderId": 1,
+  "amount": 50000
+}
+
+
+### 2. 결제 취소 요청
+# 위에서 승인 성공(DONE)한 paymentKey를 여기에 그대로 복사
+# 기대 결과:
+#   1. 응답 status: "CANCELED"
+#   2. Toss 개발자 센터: "취소됨" 확인
+#   3. DB payment 테이블: status = 'CANCELED'
+#   4. DB point_history 테이블: REVERT_ORDER (+1000) 이력 생성
+POST http://localhost:9004/api/payments/cancel
+Content-Type: application/json
+
+{
+  "paymentKey": "tviva2024...",
+  "cancelReason": "고객 단순 변심 (테스트)",
+  "refundPointAmount": 1000,
+  "orderId": 200,
+  "memberId": 1
+}

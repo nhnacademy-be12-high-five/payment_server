@@ -1,12 +1,14 @@
-package com.nhnacademy.payment_server.dto;
+package com.nhnacademy.payment_server.dto.response;
 
 import com.nhnacademy.payment_server.entity.PaymentStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
+@Builder
 public class PaymentConfirmResponse {
     @Schema(description = "최종 승인 완료된 결제 번호", example = "1")
     private String paymentId;

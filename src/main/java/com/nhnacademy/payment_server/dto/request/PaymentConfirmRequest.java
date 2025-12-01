@@ -1,11 +1,13 @@
-package com.nhnacademy.payment_server.dto;
+package com.nhnacademy.payment_server.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 public class PaymentConfirmRequest {
     @Schema(description = "Toss에서 받은 결제 식별 키", example = "tviva2024...")
     private String paymentKey;

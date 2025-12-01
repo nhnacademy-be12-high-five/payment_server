@@ -1,4 +1,4 @@
-package com.nhnacademy.payment_server.dto;
+package com.nhnacademy.payment_server.dto.response;
 
 
 import com.nhnacademy.payment_server.entity.PaymentStatus;

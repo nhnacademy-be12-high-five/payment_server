@@ -35,3 +35,4 @@ build/
 ### Local Config ###
 application-local.yml
 src/main/resources/application-local.yml
+src/main/resources/static/test-toss.html

@@ -1,6 +1,6 @@
 package com.nhnacademy.payment_server.client;
 
-import com.nhnacademy.payment_server.dto.PointTransactionRequest;
+import com.nhnacademy.payment_server.dto.request.PointTransactionRequest;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
