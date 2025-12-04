@@ -1,5 +1,6 @@
 package com.nhnacademy.payment_server.controller;
 
+import com.nhnacademy.payment_server.docs.PaymentSwagger;
 import com.nhnacademy.payment_server.dto.request.PaymentCancelRequest;
 import com.nhnacademy.payment_server.dto.request.PaymentConfirmRequest;
 import com.nhnacademy.payment_server.dto.response.PaymentConfirmResponse;

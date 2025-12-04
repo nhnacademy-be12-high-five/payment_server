@@ -94,7 +94,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public PaymentCancelResponse cancelPayment(PaymentCancelRequest requestDto) {
+    public void cancelPayment(PaymentCancelRequest requestDto) {
         Payment payment = paymentRepository.findByPaymentKey(requestDto.getPaymentKey()).orElseThrow(() -> new EntityNotFoundException("존재하지 않는 결제입니다."));
 
         if (!payment.getStatus().equals(PaymentStatus.DONE)){
@@ -127,7 +127,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         // 응답 반환
-        return PaymentCancelResponse.builder()
+        PaymentCancelResponse.builder()
                 .paymentId(payment.getId())
                 .status(payment.getStatus().toString()) // "CANCELED"
                 .canceledAmount(payment.getAmount())    // 전체 취소

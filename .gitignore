@@ -36,3 +36,4 @@ build/
 application-local.yml
 src/main/resources/application-local.yml
 src/main/resources/static/test-toss.html
+src/main/resources/data.sql

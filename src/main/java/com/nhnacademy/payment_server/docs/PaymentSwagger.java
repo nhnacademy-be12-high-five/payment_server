@@ -1,4 +1,4 @@
-package com.nhnacademy.payment_server.controller;
+package com.nhnacademy.payment_server.docs;
 
 import com.nhnacademy.payment_server.dto.request.PaymentCancelRequest;
 import com.nhnacademy.payment_server.dto.request.PaymentConfirmRequest;
