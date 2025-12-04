@@ -5,7 +5,6 @@ import com.nhnacademy.payment_server.entity.PaymentMethod;
 import com.nhnacademy.payment_server.repository.PaymentMethodRepository;
 import com.nhnacademy.payment_server.service.PaymentMethodService;
 import jakarta.persistence.EntityNotFoundException;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,24 +19,16 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
 
     @Override
     public List<PaymentMethodResponse> getActiveMethods() {
-        List<PaymentMethod> entities = paymentMethodRepository.findByIsActiveTrue();
-        List<PaymentMethodResponse> responses = new ArrayList<>();
-
-        for (PaymentMethod entity : entities) {
-            responses.add(PaymentMethodResponse.from(entity));
-        }
-        return responses;
+        return paymentMethodRepository.findByIsActiveTrue().stream()
+                .map(PaymentMethodResponse::from)
+                .toList();
     }
 
     @Override
     public List<PaymentMethodResponse> getAllMethods() {
-        List<PaymentMethod> entities = paymentMethodRepository.findAll();
-        List<PaymentMethodResponse> responses = new ArrayList<>();
-
-        for (PaymentMethod entity : entities) {
-            responses.add(PaymentMethodResponse.from(entity));
-        }
-        return responses;
+        return paymentMethodRepository.findAll().stream()
+                .map(PaymentMethodResponse::from)
+                .toList();
     }
 
     @Override

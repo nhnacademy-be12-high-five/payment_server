@@ -86,15 +86,11 @@ public class PaymentServiceImpl implements PaymentService {
             log.info("결제 승인 및 저장 완료 paymentId: [{}], status: [{}]",
                     savedPayment.getId(), savedPayment.getStatus());
 
-        return PaymentConfirmResponse.builder()
-                .paymentId(savedPayment.getId().toString())
-                .status(savedPayment.getStatus())
-                .amount(savedPayment.getAmount())
-                .build();
+        return PaymentConfirmResponse.from(savedPayment);
     }
 
     @Override
-    public void cancelPayment(PaymentCancelRequest requestDto) {
+    public PaymentCancelResponse cancelPayment(PaymentCancelRequest requestDto) {
         Payment payment = paymentRepository.findByPaymentKey(requestDto.getPaymentKey()).orElseThrow(() -> new EntityNotFoundException("존재하지 않는 결제입니다."));
 
         if (!payment.getStatus().equals(PaymentStatus.DONE)){
@@ -126,13 +122,6 @@ public class PaymentServiceImpl implements PaymentService {
             }
         }
 
-        // 응답 반환
-        PaymentCancelResponse.builder()
-                .paymentId(payment.getId())
-                .status(payment.getStatus().toString()) // "CANCELED"
-                .canceledAmount(payment.getAmount())    // 전체 취소
-                .canceledAt(payment.getCancelledAt())
-                .cancelReason(requestDto.getCancelReason())
-                .build();
+        return PaymentCancelResponse.from(payment, requestDto.getCancelReason());
     }
 }
