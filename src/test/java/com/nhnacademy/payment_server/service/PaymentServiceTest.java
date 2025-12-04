@@ -22,7 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.client.RestClient;
 
 @ExtendWith(MockitoExtension.class)
-public class PaymentServiceImplTest {
+public class PaymentServiceTest {
     @Mock
     private PaymentRepository paymentRepository;
     @Mock
@@ -41,7 +41,7 @@ public class PaymentServiceImplTest {
     @DisplayName("결제 실패시 포인트 롤백 호출")
     void confirmPayment_Rollback(){
         // given
-        PaymentConfirmRequest request = new PaymentConfirmRequest("testKey", 1L, 10000L);
+        PaymentConfirmRequest request = new PaymentConfirmRequest("testKey", "apple", 10000L, "TOSS");
 
         // Toos 호출에서 에러
         when(tossRestClient.post()).thenThrow(new RuntimeException("테스트용 Toss 통신 오류"));

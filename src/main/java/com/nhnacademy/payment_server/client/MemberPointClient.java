@@ -5,7 +5,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@FeignClient(name = "member-server")
+@FeignClient(name = "team5-member-server")
 public interface MemberPointClient {
 
     @PostMapping("/internal/points/use")
