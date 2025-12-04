@@ -25,4 +25,12 @@ public class PaymentMethod {
 
     @Column(nullable = false)
     private boolean isActive;
+
+    @Column(nullable = false)
+    private String alias;
+
+    // 상태 변경 메서드 (관리자용)
+    public void updateStatus(boolean isActive) {
+        this.isActive = isActive;
+    }
 }
