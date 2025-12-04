@@ -34,6 +34,14 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public PaymentConfirmResponse confirmPayment(PaymentConfirmRequest confirmRequest) {
+        String provider = "TOSS";
+
+        switch (provider) {
+            case "POINT" -> throw new UnsupportedOperationException("포인트 전액 결제는 아직 지원하지 않습니다.");
+            case "TOSS" -> {  }
+            default -> throw new IllegalArgumentException("지원하지 않는 결제 수단입니다.");
+        }
+
         // TODO Order Server 연동 (금액 검증 및 Toss OrderId 조회)
 
         log.info("결제 승인 요청 진입 orderId: [{}], amount: [{}]", confirmRequest.getOrderId(), confirmRequest.getAmount());
@@ -70,7 +78,8 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
             // 3. DB 저장
-            PaymentMethod paymentMethod = paymentMethodRepository.findByName(tossResponse.getMethod()).orElseThrow(() -> new RuntimeException("결제수단 선택 안됨"));
+        PaymentMethod paymentMethod = paymentMethodRepository.findByName("TOSS")
+                .orElseThrow(() -> new EntityNotFoundException("결제 수단(TOSS) 데이터가 DB에 없습니다."));
 
             Payment payment = new Payment(
                     paymentMethod,
