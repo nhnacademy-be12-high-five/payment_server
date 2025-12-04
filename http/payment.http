@@ -27,3 +27,32 @@ Content-Type: application/json
   "orderId": 200,
   "memberId": 1
 }
+
+
+### 1. [사용자] 결제 페이지용 조회 (활성 상태인 것만)
+# 기대 결과: 200 OK / "TOSS", "POINT" 등 활성화된 것만 나와야 함
+GET http://localhost:9004/api/payments/methods
+
+### 2. [관리자] 전체 결제 수단 조회
+# 기대 결과: 200 OK / 비활성화(isActive=false)된 것도 다 나와야 함
+GET http://localhost:9004/api/payments/methods/admin
+
+### 3. [관리자] 결제 수단 활성화
+# 상황: '포인트 결제'(ID: 2)를 잠시 끈다.
+# 기대 결과: 200 OK
+PUT http://localhost:9004/api/payments/methods/admin/2/status
+Content-Type: application/json
+
+{
+  "active": true
+}
+
+### 4. [관리자] 결제 수단 활성화
+# 상황: '포인트 결제'(ID: 2)를 잠시 끈다.
+# 기대 결과: 200 OK
+PUT http://localhost:9004/api/payments/methods/admin/2/status
+Content-Type: application/json
+
+{
+  "active": false
+}
