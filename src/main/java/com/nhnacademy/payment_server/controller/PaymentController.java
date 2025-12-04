@@ -4,7 +4,6 @@ import com.nhnacademy.payment_server.dto.request.PaymentCancelRequest;
 import com.nhnacademy.payment_server.dto.request.PaymentConfirmRequest;
 import com.nhnacademy.payment_server.dto.response.PaymentConfirmResponse;
 import com.nhnacademy.payment_server.service.PaymentService;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Payment API", description = "결제 관련 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/payments")
