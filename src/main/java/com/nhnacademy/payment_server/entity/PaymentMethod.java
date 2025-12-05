@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -28,6 +29,13 @@ public class PaymentMethod {
 
     @Column(nullable = false)
     private String alias;
+
+    @Builder
+    public PaymentMethod(String name, String alias, boolean isActive) {
+        this.name = name;
+        this.alias = alias;
+        this.isActive = isActive;
+    }
 
     // 상태 변경 메서드 (관리자용)
     public void updateStatus(boolean isActive) {

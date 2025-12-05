@@ -14,6 +14,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -58,6 +59,7 @@ public class Payment {
     @Column(nullable = false)
     private Long amount;
 
+    @Builder
     public Payment(PaymentMethod paymentMethod, Long orderId, LocalDateTime requestedAt, LocalDateTime approvedAt, PaymentStatus status,
                    String paymentKey, Long amount) {
         this.paymentMethod = paymentMethod;
