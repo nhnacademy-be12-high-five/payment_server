@@ -111,7 +111,7 @@ public class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("결제 실패시 포인트 롤백 호출")
+    @DisplayName("결제 실패시 예외 및 포인트 롤백 호출")
     void confirmPayment_Rollback(){
         // given
         PaymentConfirmRequest request = new PaymentConfirmRequest("testKey", "apple", 10000L, "TOSS");
@@ -127,12 +127,27 @@ public class PaymentServiceTest {
         given(tossPaymentAdapter.requestConfirm(any(), any(), any()))
                 .willThrow(new RuntimeException("Toss 통신 오류"));
 
-        // when 예외가 터지는지 확인
         assertThatThrownBy(() -> paymentService.confirmPayment(request))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.TOSS_API_ERROR);
 
-        // then 포인트 롤백 호출 됐는지 확인
         verify(memberPointClient, times(1)).revertPoint(any(PointTransactionRequest.class));
+    }
+
+    @Test
+    @DisplayName("결제 실패: 금액 불일치 (위변조 감지)")
+    void confirmPayment_Fail_AmountMismatch() {
+        String tossOrderId = "hack_order";
+        PaymentConfirmRequest request = new PaymentConfirmRequest("key", tossOrderId, 100L, "TOSS"); // 100원 요청
+
+        OrderValidationInfoResponse orderDto = OrderValidationInfoResponse.builder()
+                .realAmount(50000L)
+                .orderKey(tossOrderId)
+                .build();
+        given(orderClient.getOrderByKey(tossOrderId)).willReturn(orderDto);
+
+        assertThatThrownBy(() -> paymentService.confirmPayment(request))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.INVALID_AMOUNT);
     }
 }
