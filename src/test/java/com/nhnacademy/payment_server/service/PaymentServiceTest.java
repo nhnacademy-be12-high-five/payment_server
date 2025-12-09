@@ -33,6 +33,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestClient;
 
 @ExtendWith(MockitoExtension.class)
@@ -94,7 +95,9 @@ public class PaymentServiceTest {
 
         // 4. 저장 Mocking (ID가 있는 객체 리턴)
         Payment savedPayment = new Payment(method, orderId, LocalDateTime.now(), LocalDateTime.now(), PaymentStatus.DONE, paymentKey, amount);
-        // (Payment 엔티티에 setId 같은 게 없다면 ReflectionTestUtils 써야 할 수도 있음)
+
+        ReflectionTestUtils.setField(savedPayment, "id", 1L);
+
         given(paymentRepository.save(any(Payment.class))).willReturn(savedPayment);
 
         // when
@@ -114,6 +117,14 @@ public class PaymentServiceTest {
     void confirmPayment_Rollback(){
         // given
         PaymentConfirmRequest request = new PaymentConfirmRequest("testKey", "apple", 10000L, "TOSS");
+
+        OrderValidationInfoResponse orderDto = OrderValidationInfoResponse.builder()
+                .orderId(100L)
+                .orderKey("apple")
+                .realAmount(10000L)
+                .memberId(1L)
+                .build();
+        given(orderClient.getOrderByKey("apple")).willReturn(orderDto);
 
         // Toos 호출에서 에러
         when(tossRestClient.post()).thenThrow(new RuntimeException("테스트용 Toss 통신 오류"));

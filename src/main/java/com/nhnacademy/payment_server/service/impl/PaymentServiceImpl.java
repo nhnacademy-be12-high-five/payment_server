@@ -14,10 +14,11 @@ import com.nhnacademy.payment_server.dto.response.TossConfirmResponse;
 import com.nhnacademy.payment_server.entity.Payment;
 import com.nhnacademy.payment_server.entity.PaymentMethod;
 import com.nhnacademy.payment_server.entity.PaymentStatus;
+import com.nhnacademy.payment_server.exception.BusinessException;
+import com.nhnacademy.payment_server.exception.ErrorCode;
 import com.nhnacademy.payment_server.repository.PaymentMethodRepository;
 import com.nhnacademy.payment_server.repository.PaymentRepository;
 import com.nhnacademy.payment_server.service.PaymentService;
-import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -45,15 +46,15 @@ public class PaymentServiceImpl implements PaymentService {
 
         return switch (provider) {
             case "TOSS" -> processTossPayment(request);
-            case "POINT" -> throw new UnsupportedOperationException("포인트 전액 결제는 아직 지원하지 않습니다.");
-            default -> throw new IllegalArgumentException("지원하지 않는 결제 수단입니다: " + provider);
+            case "POINT" -> throw new BusinessException(ErrorCode.UNSUPPORTED_METHOD);
+            default -> throw new BusinessException(ErrorCode.METHOD_NOT_FOUND);
         };
     }
 
     public PaymentConfirmResponse processTossPayment(PaymentConfirmRequest request) {
         log.info("결제 승인 요청 진입 orderId: {}, amount: {}", request.getOrderId(), request.getAmount());
 
-        // 주문 서버에서 진짜 정보 가져오기 (검증)
+        // 검증을 위해 주문 서버에서 결제 정보를 받아오기
         String tossOrderId = request.getOrderId();
         OrderValidationInfoResponse orderDto = orderClient.getOrderByKey(tossOrderId);
 
@@ -61,8 +62,9 @@ public class PaymentServiceImpl implements PaymentService {
         Long memberId = orderDto.getMemberId();
         Long realAmount = orderDto.getRealAmount();
 
+        // 금액 위변조 검증
         if (!Objects.equals(request.getAmount(), realAmount)) {
-            throw new IllegalArgumentException("금액 위변조 감지. 요청 금액: "+request.getAmount() + " 실제 금액: " + realAmount);
+            throw new BusinessException(ErrorCode.INVALID_AMOUNT);
         }
 
         // todo 주문서버에서 실제 차감포인트금액 알아오기
@@ -74,8 +76,8 @@ public class PaymentServiceImpl implements PaymentService {
                 log.info("포인트 차감 성공 memberId={}, amount={}", memberId, usePointAmount);
             }
         } catch (Exception e) {
-            log.error("포인트 차감 실패", e);
-            throw new RuntimeException("포인트 사용 실패: " + e.getMessage());
+            log.error("멤버 서버 통신 오류, 포인트 차감 실패", e);
+            throw new BusinessException(ErrorCode.POINT_API_ERROR);
         }
 
         // 토스 - 최종 결제 승인
@@ -83,22 +85,22 @@ public class PaymentServiceImpl implements PaymentService {
 
         try {
             tossResponse = tossAdapter.requestConfirm(request.getPaymentKey(), tossOrderId, realAmount);
-        } catch (Exception e) {
-            log.error("Toss 최종 승인 실패. 롤백 진행. orderKey: {}", tossOrderId, e);
+        } catch (Exception tossEx) {
+            log.error("Toss 최종 승인 실패. 롤백 진행. orderKey: {}", tossOrderId, tossEx);
 
             if (usePointAmount > 0) {
                 try {
                     memberPointClient.revertPoint(new PointTransactionRequest(memberId, usePointAmount, internalOrderId));
-                } catch (Exception error) {
-                    log.error("포인트 롤백 실패 memberId={}, orderId={}", memberId, internalOrderId,error);
+                } catch (Exception pointEx) {
+                    log.error("포인트 롤백 실패 memberId={}, orderId={}", memberId, internalOrderId, pointEx);
                 }
             }
-            throw new RuntimeException("Toss 결제 승인 실패", e);
+            throw new BusinessException(ErrorCode.TOSS_API_ERROR);
         }
 
         // DB 저장
         PaymentMethod paymentMethod = paymentMethodRepository.findByName("TOSS")
-                .orElseThrow(() -> new EntityNotFoundException("결제 수단(TOSS) 데이터가 DB에 없습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.METHOD_NOT_FOUND));
 
         Payment payment = Payment.builder()
                 .paymentMethod(paymentMethod)
@@ -129,32 +131,30 @@ public class PaymentServiceImpl implements PaymentService {
         } catch (Exception e) {
             log.error("결제는 성공, 주문 서버 알림 전송 실패 orderId={}", savedPayment.getOrderId(), e);
         }
-
         return PaymentConfirmResponse.from(savedPayment);
-
     }
 
     @Override
     public PaymentCancelResponse cancelPayment(PaymentCancelRequest requestDto) {
         Payment payment = paymentRepository.findByPaymentKey(requestDto.getPaymentKey())
-                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 결제입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
 
         if (!payment.getStatus().equals(PaymentStatus.DONE)) {
-            throw new IllegalArgumentException("DONE 상태인 주문만 취소가 가능합니다.");
+            throw new BusinessException(ErrorCode.INVALID_PAYMENT_STATUS);
         }
 
         try {
             tossAdapter.requestCancel(payment.getPaymentKey(), requestDto.getCancelReason());
         } catch (Exception e) {
-            log.error("Toss 결제 취소 요청 실패. paymentKey={}", payment.getPaymentKey(), e);
-            throw new RuntimeException("Toss 결제 취소에 실패했습니다: " + e.getMessage());
+            log.error("Toss 결제 취소 실패. paymentKey={}", payment.getPaymentKey(), e);
+            throw new BusinessException(ErrorCode.TOSS_API_ERROR);
         }
 
         // DB 결제 상태 변경 (더티 체킹)
         payment.setStatus(PaymentStatus.CANCELED);
         payment.setCancelledAt(LocalDateTime.now());
 
-        // 포인트 환불 요청 (Feign) 결제 취소는 됐으니 포인트 환불 실패해도 진행됨
+        // 포인트 환불 로직 - 실패해도 결제는 취소 유지
         if (requestDto.getRefundPointAmount() != null && requestDto.getRefundPointAmount() > 0) {
             try {
                 memberPointClient.revertPoint(new PointTransactionRequest(
@@ -162,12 +162,11 @@ public class PaymentServiceImpl implements PaymentService {
                         requestDto.getRefundPointAmount(),
                         requestDto.getOrderId()
                 ));
-                log.info("포인트 환불 성공. orderId={}", requestDto.getOrderId());
+                log.info("결제 취소 및 포인트 환불 성공. orderId={}", requestDto.getOrderId());
             } catch (Exception e) {
                 log.error("결제 취소 성공, 포인트 환불 실패. orderId={}", requestDto.getOrderId(), e);
             }
         }
-
         return PaymentCancelResponse.from(payment, requestDto.getCancelReason());
     }
 }

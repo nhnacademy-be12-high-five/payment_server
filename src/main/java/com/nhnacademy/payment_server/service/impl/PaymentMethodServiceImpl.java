@@ -2,9 +2,10 @@ package com.nhnacademy.payment_server.service.impl;
 
 import com.nhnacademy.payment_server.dto.response.PaymentMethodResponse;
 import com.nhnacademy.payment_server.entity.PaymentMethod;
+import com.nhnacademy.payment_server.exception.BusinessException;
+import com.nhnacademy.payment_server.exception.ErrorCode;
 import com.nhnacademy.payment_server.repository.PaymentMethodRepository;
 import com.nhnacademy.payment_server.service.PaymentMethodService;
-import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,8 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
     @Override
     @Transactional
     public void updateStatus(Long methodId, boolean isActive) {
-        PaymentMethod method = paymentMethodRepository.findById(methodId).orElseThrow(() -> new EntityNotFoundException("존재하지 않는 결제 수단입니다."));
+        PaymentMethod method = paymentMethodRepository.findById(methodId).orElseThrow(()
+                -> new BusinessException(ErrorCode.METHOD_NOT_FOUND));
         method.updateStatus(isActive);
     }
 }

@@ -1,29 +1,39 @@
 package com.nhnacademy.payment_server.exception;
 
-import jakarta.persistence.EntityNotFoundException;
-import org.springframework.http.HttpStatus;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<String> handleNotFoundRequest(EntityNotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body("데이터가 없습니다: " + e.getMessage());
+    // 1. 우리가 만든 BusinessException 처리
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException e) {
+        log.error("BusinessException: {}", e.getErrorCode().getMessage());
+        return ResponseEntity
+                .status(e.getErrorCode().getStatus())
+                .body(new ErrorResponse(e.getErrorCode().getCode(), e.getErrorCode().getMessage()));
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<String> handleBadRequest(IllegalArgumentException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body("잘못된 요청입니다: " + e.getMessage());
-    }
-
+    // 2. 그 외 알 수 없는 예외 처리 (500)
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleGeneralException(Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("서버 내부 오류가 발생했습니다: " + e.getMessage());
+    public ResponseEntity<ErrorResponse> handleException(Exception e) {
+        log.error("Unhandled Exception: ", e);
+        return ResponseEntity
+                .status(500)
+                .body(new ErrorResponse("PAY-999", "알 수 없는 서버 오류가 발생했습니다."));
+    }
+
+    // 응답용 DTO (Inner Class)
+    @Getter
+    @AllArgsConstructor
+    public static class ErrorResponse {
+        private String code;
+        private String message;
     }
 }
