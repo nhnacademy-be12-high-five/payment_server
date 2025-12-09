@@ -5,15 +5,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.nhnacademy.payment_server.adaptor.TossPaymentAdapter;
 import com.nhnacademy.payment_server.client.MemberPointClient;
 import com.nhnacademy.payment_server.client.OrderClient;
+import com.nhnacademy.payment_server.dto.request.PaymentCancelRequest;
 import com.nhnacademy.payment_server.dto.request.PaymentConfirmRequest;
 import com.nhnacademy.payment_server.dto.request.PointTransactionRequest;
 import com.nhnacademy.payment_server.dto.response.OrderValidationInfoResponse;
+import com.nhnacademy.payment_server.dto.response.PaymentCancelResponse;
 import com.nhnacademy.payment_server.dto.response.PaymentConfirmResponse;
 import com.nhnacademy.payment_server.dto.response.TossConfirmResponse;
 import com.nhnacademy.payment_server.entity.Payment;
@@ -149,5 +152,76 @@ public class PaymentServiceTest {
         assertThatThrownBy(() -> paymentService.confirmPayment(request))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.INVALID_AMOUNT);
+    }
+
+    @Test
+    @DisplayName("결제 취소 성공: 상태 변경, Toss 취소, 포인트 환불 완료")
+    void cancelPayment_Success() {
+        // given
+        String paymentKey = "test_cancel_key";
+        PaymentCancelRequest request = new PaymentCancelRequest(paymentKey, "단순 변심", 1000L, 100L, 1L);
+
+        // 1. DB 조회 Mocking (이미 승인된 결제 건)
+        Payment payment = Payment.builder()
+                .paymentMethod(new PaymentMethod("TOSS", "토스", true))
+                .orderId(100L)
+                .status(PaymentStatus.DONE) // 이미 완료된 상태
+                .paymentKey(paymentKey)
+                .amount(50000L)
+                .build();
+        ReflectionTestUtils.setField(payment, "id", 10L);
+
+        given(paymentRepository.findByPaymentKey(paymentKey)).willReturn(Optional.of(payment));
+
+        // when
+        PaymentCancelResponse response = paymentService.cancelPayment(request);
+
+        // then
+        assertThat(response.getStatus()).isEqualTo("CANCELED"); // 상태가 취소로 변했는지 확인
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CANCELED); // 엔티티 상태 변경 확인
+
+        // Toss 취소 API 호출 확인
+        verify(tossPaymentAdapter).requestCancel(eq(paymentKey), any());
+
+        // 포인트 환불 API 호출 확인
+        verify(memberPointClient).revertPoint(any(PointTransactionRequest.class));
+    }
+
+    @Test
+    @DisplayName("결제 취소 실패: 이미 취소된 결제는 다시 취소할 수 없다")
+    void cancelPayment_Fail_AlreadyCanceled() {
+        // given
+        String paymentKey = "already_canceled_key";
+        PaymentCancelRequest request = new PaymentCancelRequest(paymentKey, "중복 취소", 0L, 100L, 1L);
+
+        // 이미 CANCELED 상태인 결제 정보
+        Payment payment = Payment.builder()
+                .status(PaymentStatus.CANCELED)
+                .paymentKey(paymentKey)
+                .build();
+
+        given(paymentRepository.findByPaymentKey(paymentKey)).willReturn(Optional.of(payment));
+
+        // when & then
+        assertThatThrownBy(() -> paymentService.cancelPayment(request))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.INVALID_PAYMENT_STATUS);
+
+        // Toss 호출하면 안 됨
+        verify(tossPaymentAdapter, never()).requestCancel(any(), any());
+    }
+
+    @Test
+    @DisplayName("결제 취소 실패: 존재하지 않는 결제 키")
+    void cancelPayment_Fail_NotFound() {
+        // given
+        PaymentCancelRequest request = new PaymentCancelRequest("unknown_key", "사유", 0L, 100L, 1L);
+
+        given(paymentRepository.findByPaymentKey("unknown_key")).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> paymentService.cancelPayment(request))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PAYMENT_NOT_FOUND);
     }
 }
