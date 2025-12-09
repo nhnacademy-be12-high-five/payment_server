@@ -7,7 +7,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.nhnacademy.payment_server.adaptor.TossPaymentAdapter;
 import com.nhnacademy.payment_server.client.MemberPointClient;
@@ -20,6 +19,8 @@ import com.nhnacademy.payment_server.dto.response.TossConfirmResponse;
 import com.nhnacademy.payment_server.entity.Payment;
 import com.nhnacademy.payment_server.entity.PaymentMethod;
 import com.nhnacademy.payment_server.entity.PaymentStatus;
+import com.nhnacademy.payment_server.exception.BusinessException;
+import com.nhnacademy.payment_server.exception.ErrorCode;
 import com.nhnacademy.payment_server.repository.PaymentMethodRepository;
 import com.nhnacademy.payment_server.repository.PaymentRepository;
 import com.nhnacademy.payment_server.service.impl.PaymentServiceImpl;
@@ -34,7 +35,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.RestClient;
 
 @ExtendWith(MockitoExtension.class)
 public class PaymentServiceTest {
@@ -48,8 +48,6 @@ public class PaymentServiceTest {
     private TossPaymentAdapter tossPaymentAdapter;
     @Mock
     private OrderClient orderClient;
-    @Mock
-    private RestClient tossRestClient;
     @Mock
     private RabbitTemplate rabbitTemplate;
 
@@ -66,7 +64,7 @@ public class PaymentServiceTest {
         Long amount = 50000L;
         Long memberId = 1L;
 
-        PaymentConfirmRequest request = new PaymentConfirmRequest(paymentKey, tossOrderId, amount, "TOSS"); // (DTO 수정 반영 필요)
+        PaymentConfirmRequest request = new PaymentConfirmRequest(paymentKey, tossOrderId, amount, "TOSS");
 
         // 1. 주문 서버 응답 Mocking
         OrderValidationInfoResponse orderDto = OrderValidationInfoResponse.builder()
@@ -126,13 +124,13 @@ public class PaymentServiceTest {
                 .build();
         given(orderClient.getOrderByKey("apple")).willReturn(orderDto);
 
-        // Toos 호출에서 에러
-        when(tossRestClient.post()).thenThrow(new RuntimeException("테스트용 Toss 통신 오류"));
+        given(tossPaymentAdapter.requestConfirm(any(), any(), any()))
+                .willThrow(new RuntimeException("Toss 통신 오류"));
 
         // when 예외가 터지는지 확인
         assertThatThrownBy(() -> paymentService.confirmPayment(request))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Toss 결제 승인 실패");
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.TOSS_API_ERROR);
 
         // then 포인트 롤백 호출 됐는지 확인
         verify(memberPointClient, times(1)).revertPoint(any(PointTransactionRequest.class));
