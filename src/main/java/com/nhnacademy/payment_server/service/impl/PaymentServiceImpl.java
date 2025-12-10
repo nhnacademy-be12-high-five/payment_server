@@ -41,29 +41,29 @@ public class PaymentServiceImpl implements PaymentService {
     private final RabbitTemplate rabbitTemplate;
 
     @Override
-    public PaymentConfirmResponse confirmPayment(PaymentConfirmRequest request) {
-        String provider = request.getPaymentMethod().toUpperCase();
+    public PaymentConfirmResponse confirmPayment(PaymentConfirmRequest requestDto) {
+        String provider = requestDto.getPaymentMethod().toUpperCase();
 
         return switch (provider) {
-            case "TOSS" -> processTossPayment(request);
+            case "TOSS" -> processTossPayment(requestDto);
             case "POINT" -> throw new BusinessException(ErrorCode.UNSUPPORTED_METHOD);
             default -> throw new BusinessException(ErrorCode.METHOD_NOT_FOUND);
         };
     }
 
-    public PaymentConfirmResponse processTossPayment(PaymentConfirmRequest request) {
-        log.info("결제 승인 요청 진입 orderId: {}, amount: {}", request.getOrderId(), request.getAmount());
+    public PaymentConfirmResponse processTossPayment(PaymentConfirmRequest requestDto) {
+        log.info("결제 승인 요청 진입 orderKey: {}, amount: {}", requestDto.getOrderKey(), requestDto.getAmount());
 
         // 검증을 위해 주문 서버에서 결제 정보를 받아오기
-        String tossOrderId = request.getOrderId();
-        OrderValidationInfoResponse orderDto = orderClient.getOrderByKey(tossOrderId);
+        String orderKey = requestDto.getOrderKey();
+        OrderValidationInfoResponse orderDto = orderClient.getOrderByKey(orderKey);
 
-        Long internalOrderId = orderDto.getOrderId();
+        Long orderId = orderDto.getOrderId();
         Long memberId = orderDto.getMemberId();
         Long realAmount = orderDto.getRealAmount();
 
         // 금액 위변조 검증
-        if (!Objects.equals(request.getAmount(), realAmount)) {
+        if (!Objects.equals(requestDto.getAmount(), realAmount)) {
             throw new BusinessException(ErrorCode.INVALID_AMOUNT);
         }
 
@@ -72,7 +72,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         try {
             if (usePointAmount > 0) {
-                memberPointClient.usePoint(new PointTransactionRequest(memberId, usePointAmount, internalOrderId));
+                memberPointClient.usePoint(new PointTransactionRequest(memberId, usePointAmount, orderId));
                 log.info("포인트 차감 성공 memberId={}, amount={}", memberId, usePointAmount);
             }
         } catch (Exception e) {
@@ -84,15 +84,15 @@ public class PaymentServiceImpl implements PaymentService {
         TossConfirmResponse tossResponse;
 
         try {
-            tossResponse = tossAdapter.requestConfirm(request.getPaymentKey(), tossOrderId, realAmount);
+            tossResponse = tossAdapter.requestConfirm(requestDto.getPaymentKey(), orderKey, realAmount);
         } catch (Exception tossEx) {
-            log.error("Toss 최종 승인 실패. 롤백 진행. orderKey: {}", tossOrderId, tossEx);
+            log.error("Toss 최종 승인 실패. 롤백 진행. orderKey: {}", orderKey, tossEx);
 
             if (usePointAmount > 0) {
                 try {
-                    memberPointClient.revertPoint(new PointTransactionRequest(memberId, usePointAmount, internalOrderId));
+                    memberPointClient.revertPoint(new PointTransactionRequest(memberId, usePointAmount, orderId));
                 } catch (Exception pointEx) {
-                    log.error("포인트 롤백 실패 memberId={}, orderId={}", memberId, internalOrderId, pointEx);
+                    log.error("포인트 롤백 실패 memberId={}, orderId={}", memberId, orderId, pointEx);
                 }
             }
             throw new BusinessException(ErrorCode.TOSS_API_ERROR);
@@ -104,7 +104,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         Payment payment = Payment.builder()
                 .paymentMethod(paymentMethod)
-                .orderId(internalOrderId)
+                .orderId(orderId)
                 .requestedAt(tossResponse.getRequestedAt().toLocalDateTime())
                 .approvedAt(tossResponse.getApprovedAt().toLocalDateTime())
                 .status(tossResponse.getStatusEnum())
@@ -133,6 +133,9 @@ public class PaymentServiceImpl implements PaymentService {
         }
         return PaymentConfirmResponse.from(savedPayment);
     }
+
+
+
 
     @Override
     public PaymentCancelResponse cancelPayment(PaymentCancelRequest requestDto) {
