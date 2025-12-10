@@ -59,21 +59,18 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentConfirmResponse processTossPayment(PaymentConfirmRequest requestDto) {
         log.info("결제 승인 요청 진입 orderKey: {}, amount: {}", requestDto.getOrderKey(), requestDto.getAmount());
 
-        // 검증을 위해 주문 서버에서 결제 정보를 받아오기
+        // 검증을 위한 주문 서버 결제 정보
         String orderKey = requestDto.getOrderKey();
         OrderValidationInfoResponse orderDto = orderClient.getOrderByKey(orderKey);
 
         Long orderId = orderDto.getOrderId();
-        Long memberId = orderDto.getMemberId();
-        Long realAmount = orderDto.getRealAmount();
+        Long memberId = orderDto.getUserId();
+        Long realAmount = orderDto.getPaymentAmount();
+        Long usePointAmount = orderDto.getUsedPoint();
 
-        // 금액 위변조 검증
         if (!Objects.equals(requestDto.getAmount(), realAmount)) {
             throw new BusinessException(ErrorCode.INVALID_AMOUNT);
         }
-
-        // todo 주문서버에서 실제 차감포인트금액 알아오기
-        Long usePointAmount = 1000L;
 
         try {
             if (usePointAmount > 0) {
@@ -103,7 +100,7 @@ public class PaymentServiceImpl implements PaymentService {
             throw new BusinessException(ErrorCode.TOSS_API_ERROR);
         }
 
-        // DB 저장
+        // 결제 정보 DB 저장
         PaymentMethod paymentMethod = paymentMethodRepository.findByName("TOSS")
                 .orElseThrow(() -> new BusinessException(ErrorCode.METHOD_NOT_FOUND));
 
@@ -117,40 +114,64 @@ public class PaymentServiceImpl implements PaymentService {
                 .amount(tossResponse.getTotalAmount())
                 .build();
 
-        Payment savedPayment = paymentRepository.save(payment);
+        // 메세지를 outbox에 저장
+        PaymentMessageOutbox outbox;
 
-        log.info("결제 승인 및 저장 완료 paymentId: [{}], status: [{}]", savedPayment.getId(), savedPayment.getStatus());
-
-        // Outbox DB 저장
         try {
             PaymentSuccessMessage message = new PaymentSuccessMessage(
-                    savedPayment.getOrderId(),
-                    savedPayment.getPaymentKey(),
-                    savedPayment.getAmount(),
-                    savedPayment.getApprovedAt()
+                    payment.getOrderId(),
+                    payment.getPaymentKey(),
+                    payment.getAmount(),
+                    payment.getApprovedAt()
             );
 
-            // 객체 -> JSON 문자열 변환
+            // 객체 -> JSON 문자열 변환. 이때 에러가 나면 save가 안되는데, 결제는 된 상태
             String jsonPayload = objectMapper.writeValueAsString(message);
 
-            PaymentMessageOutbox outbox = PaymentMessageOutbox.builder()
-                    .paymentId(savedPayment.getId())
+            outbox = PaymentMessageOutbox.builder()
+                    .paymentId(null)
                     .payload(jsonPayload)
-                    .status(MessageStatus.READY) // 대기 상태
+                    .status(MessageStatus.READY)
+                    .build();
+        } catch (JsonProcessingException e) {
+            log.error("메시지 JSON 변환 오류 발생. 결제 취소 진행. orderId={}", orderId, e);
+            compensateTossPayment(tossResponse.getPaymentKey(), "System Error (Message Parsing)");
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+
+        // db에 저장해야 생기는 id 값을 얻기 위한 객체
+        Payment savedPayment;
+
+        try {
+            savedPayment = paymentRepository.save(payment);
+
+            PaymentMessageOutbox finalOutbox = PaymentMessageOutbox.builder()
+                    .paymentId(savedPayment.getId())
+                    .payload(outbox.getPayload())
+                    .status(MessageStatus.READY)
                     .build();
 
-            outboxRepository.save(outbox);
+            outboxRepository.save(finalOutbox);
 
-            log.info("결제 성공 메시지 Outbox 저장 완료. orderId={}", savedPayment.getOrderId());
+            log.info("결제 및 Outbox DB 저장 완료. paymentId={}", savedPayment.getId());
 
-        } catch (JsonProcessingException e) {
-            log.error("메시지 변환 오류", e);
+        } catch (Exception e) {
+            log.error("DB 저장 실패! 승인된 Toss 결제를 자동 취소합니다. paymentKey={}", tossResponse.getPaymentKey(), e);
+
+            compensateTossPayment(tossResponse.getPaymentKey(), "System Error (DB Save Failed)");
+
+            if (usePointAmount > 0) {
+                try {
+                    memberPointClient.revertPoint(new PointTransactionRequest(memberId, usePointAmount, orderId));
+                    log.info("DB 저장 실패로 인한 포인트 롤백 성공");
+                } catch (Exception pointEx) {
+                    log.error("CRITICAL: 포인트 롤백 실패 (수동 복구 필요) memberId={}", memberId, pointEx);
+                }
+            }
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
         return PaymentConfirmResponse.from(savedPayment);
     }
-
-
 
 
     @Override
@@ -183,9 +204,19 @@ public class PaymentServiceImpl implements PaymentService {
                 ));
                 log.info("결제 취소 및 포인트 환불 성공. orderId={}", requestDto.getOrderId());
             } catch (Exception e) {
-                log.error("결제 취소 성공, 포인트 환불 실패. orderId={}", requestDto.getOrderId(), e);
+                log.error("결제 취소 성공, 포인트 환불 실패. (관리자 수동 적립 필요) orderId={}", requestDto.getOrderId(), e);
             }
         }
         return PaymentCancelResponse.from(payment, requestDto.getCancelReason());
+    }
+
+    // 시스템 내부 오류 복구 목적의 보상 트랜잭션
+    private void compensateTossPayment(String paymentKey, String reason) {
+        try {
+            tossAdapter.requestCancel(paymentKey, reason);
+            log.info("Toss 결제 자동 취소 성공. paymentKey={}", paymentKey);
+        } catch (Exception e) {
+            log.error("CRITICAL: Toss 결제 취소 실패. 수동 환불 필요 paymentKey={}", paymentKey, e);
+        }
     }
 }

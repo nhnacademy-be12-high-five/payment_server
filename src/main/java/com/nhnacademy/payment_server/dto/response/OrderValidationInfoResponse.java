@@ -7,7 +7,8 @@ import lombok.Getter;
 @Builder
 public class OrderValidationInfoResponse {
     private Long orderId;
-    private Long realAmount; // 원래 Integer인데 여기 서버에서는 Long이라서 잭슨이 변환
+    private Long paymentAmount;
     private String orderKey;
-    private Long memberId;
+    private Long userId;
+    private long usedPoint; // 포인트는 안 쓸 수도 있으니까 혹시 null이라면 자동 0
 }

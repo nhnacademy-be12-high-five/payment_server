@@ -73,15 +73,17 @@ public class PaymentServiceTest {
         Long orderId = 100L;
         Long amount = 50000L;
         Long memberId = 1L;
+        long usedPoint = 1000L;
 
         PaymentConfirmRequest request = new PaymentConfirmRequest(paymentKey, tossOrderId, amount, "TOSS");
 
         // 1. 주문 서버 응답 Mocking
         OrderValidationInfoResponse orderDto = OrderValidationInfoResponse.builder()
                 .orderId(orderId)
-                .realAmount(amount)
+                .paymentAmount(amount)
                 .orderKey(tossOrderId)
-                .memberId(memberId)
+                .userId(memberId)
+                .usedPoint(usedPoint)
                 .build();
         given(orderClient.getOrderByKey(tossOrderId)).willReturn(orderDto);
 
@@ -131,8 +133,9 @@ public class PaymentServiceTest {
         OrderValidationInfoResponse orderDto = OrderValidationInfoResponse.builder()
                 .orderId(100L)
                 .orderKey("apple")
-                .realAmount(10000L)
-                .memberId(1L)
+                .paymentAmount(10000L)
+                .userId(1L)
+                .usedPoint(1000L)
                 .build();
         given(orderClient.getOrderByKey("apple")).willReturn(orderDto);
 
@@ -153,7 +156,7 @@ public class PaymentServiceTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest("key", tossOrderId, 100L, "TOSS"); // 100원 요청
 
         OrderValidationInfoResponse orderDto = OrderValidationInfoResponse.builder()
-                .realAmount(50000L)
+                .paymentAmount(50000L)
                 .orderKey(tossOrderId)
                 .build();
         given(orderClient.getOrderByKey(tossOrderId)).willReturn(orderDto);
