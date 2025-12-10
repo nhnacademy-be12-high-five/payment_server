@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nhnacademy.payment_server.adaptor.TossPaymentAdapter;
 import com.nhnacademy.payment_server.client.MemberPointClient;
 import com.nhnacademy.payment_server.client.OrderClient;
@@ -20,10 +21,12 @@ import com.nhnacademy.payment_server.dto.response.PaymentCancelResponse;
 import com.nhnacademy.payment_server.dto.response.PaymentConfirmResponse;
 import com.nhnacademy.payment_server.dto.response.TossConfirmResponse;
 import com.nhnacademy.payment_server.entity.Payment;
+import com.nhnacademy.payment_server.entity.PaymentMessageOutbox;
 import com.nhnacademy.payment_server.entity.PaymentMethod;
 import com.nhnacademy.payment_server.entity.PaymentStatus;
 import com.nhnacademy.payment_server.exception.BusinessException;
 import com.nhnacademy.payment_server.exception.ErrorCode;
+import com.nhnacademy.payment_server.repository.PaymentMessageOutboxRepository;
 import com.nhnacademy.payment_server.repository.PaymentMethodRepository;
 import com.nhnacademy.payment_server.repository.PaymentRepository;
 import com.nhnacademy.payment_server.service.impl.PaymentServiceImpl;
@@ -53,6 +56,10 @@ public class PaymentServiceTest {
     private OrderClient orderClient;
     @Mock
     private RabbitTemplate rabbitTemplate;
+    @Mock
+    private PaymentMessageOutboxRepository outboxRepository;
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private PaymentServiceImpl paymentService;
@@ -109,8 +116,10 @@ public class PaymentServiceTest {
 
         // 포인트 차감 호출 확인
         verify(memberPointClient).usePoint(any(PointTransactionRequest.class));
-        // RabbitMQ 발송 확인
-        verify(rabbitTemplate).convertAndSend(eq("payment-success-queue"), any(Object.class));
+
+        // OUTBOX 저장 확인
+        verify(outboxRepository).save(any(PaymentMessageOutbox.class));
+
     }
 
     @Test
