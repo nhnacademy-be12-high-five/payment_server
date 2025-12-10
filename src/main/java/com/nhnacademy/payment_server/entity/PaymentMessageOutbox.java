@@ -1,0 +1,43 @@
+package com.nhnacademy.payment_server.entity;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
+import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+@Entity
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
+@Builder
+public class PaymentMessageOutbox {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Long paymentId;      // 어떤 결제 건인지
+
+    @Lob
+    private String payload;      // 메시지 내용 (JSON String)
+
+    @Setter
+    @Enumerated(EnumType.STRING)
+    private MessageStatus status; // READY(대기), DONE(완료)
+
+    @CreatedDate
+    private LocalDateTime createdAt;
+}

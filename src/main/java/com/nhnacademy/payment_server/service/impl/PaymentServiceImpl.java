@@ -1,5 +1,7 @@
 package com.nhnacademy.payment_server.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nhnacademy.payment_server.adaptor.TossPaymentAdapter;
 import com.nhnacademy.payment_server.client.MemberPointClient;
 import com.nhnacademy.payment_server.client.OrderClient;
@@ -11,11 +13,14 @@ import com.nhnacademy.payment_server.dto.response.OrderValidationInfoResponse;
 import com.nhnacademy.payment_server.dto.response.PaymentCancelResponse;
 import com.nhnacademy.payment_server.dto.response.PaymentConfirmResponse;
 import com.nhnacademy.payment_server.dto.response.TossConfirmResponse;
+import com.nhnacademy.payment_server.entity.MessageStatus;
 import com.nhnacademy.payment_server.entity.Payment;
+import com.nhnacademy.payment_server.entity.PaymentMessageOutbox;
 import com.nhnacademy.payment_server.entity.PaymentMethod;
 import com.nhnacademy.payment_server.entity.PaymentStatus;
 import com.nhnacademy.payment_server.exception.BusinessException;
 import com.nhnacademy.payment_server.exception.ErrorCode;
+import com.nhnacademy.payment_server.repository.PaymentMessageOutboxRepository;
 import com.nhnacademy.payment_server.repository.PaymentMethodRepository;
 import com.nhnacademy.payment_server.repository.PaymentRepository;
 import com.nhnacademy.payment_server.service.PaymentService;
@@ -23,7 +28,6 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,7 +42,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final MemberPointClient memberPointClient; // Feign
     private final OrderClient orderClient; // Feign
     private final TossPaymentAdapter tossAdapter;
-    private final RabbitTemplate rabbitTemplate;
+    private final PaymentMessageOutboxRepository outboxRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
     public PaymentConfirmResponse confirmPayment(PaymentConfirmRequest requestDto) {
@@ -116,7 +121,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         log.info("결제 승인 및 저장 완료 paymentId: [{}], status: [{}]", savedPayment.getId(), savedPayment.getStatus());
 
-        // RabbitMQ
+        // Outbox DB 저장
         try {
             PaymentSuccessMessage message = new PaymentSuccessMessage(
                     savedPayment.getOrderId(),
@@ -125,11 +130,22 @@ public class PaymentServiceImpl implements PaymentService {
                     savedPayment.getApprovedAt()
             );
 
-            rabbitTemplate.convertAndSend("payment-success-queue", message);
-            log.info("주문 서버로 결제 성공 메시지 전송 완료. orderId={}", savedPayment.getOrderId());
+            // 객체 -> JSON 문자열 변환
+            String jsonPayload = objectMapper.writeValueAsString(message);
 
-        } catch (Exception e) {
-            log.error("결제는 성공, 주문 서버 알림 전송 실패 orderId={}", savedPayment.getOrderId(), e);
+            PaymentMessageOutbox outbox = PaymentMessageOutbox.builder()
+                    .paymentId(savedPayment.getId())
+                    .payload(jsonPayload)
+                    .status(MessageStatus.READY) // 대기 상태
+                    .build();
+
+            outboxRepository.save(outbox);
+
+            log.info("결제 성공 메시지 Outbox 저장 완료. orderId={}", savedPayment.getOrderId());
+
+        } catch (JsonProcessingException e) {
+            log.error("메시지 변환 오류", e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
         return PaymentConfirmResponse.from(savedPayment);
     }
