@@ -20,7 +20,6 @@ import com.nhnacademy.payment_server.entity.PaymentMethod;
 import com.nhnacademy.payment_server.entity.PaymentStatus;
 import com.nhnacademy.payment_server.exception.BusinessException;
 import com.nhnacademy.payment_server.exception.ErrorCode;
-import com.nhnacademy.payment_server.repository.PaymentMessageOutboxRepository;
 import com.nhnacademy.payment_server.repository.PaymentMethodRepository;
 import com.nhnacademy.payment_server.repository.PaymentRepository;
 import com.nhnacademy.payment_server.service.PaymentOutboxService;
@@ -42,7 +41,6 @@ public class PaymentServiceImpl implements PaymentService {
     private final MemberPointClient memberPointClient; // Feign
     private final OrderClient orderClient; // Feign
     private final TossPaymentAdapter tossAdapter;
-    private final PaymentMessageOutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
     private final PaymentOutboxService outboxService;
 
@@ -95,7 +93,7 @@ public class PaymentServiceImpl implements PaymentService {
                 try {
                     memberPointClient.revertPoint(new PointTransactionRequest(memberId, usePointAmount, orderId));
                 } catch (Exception pointEx) {
-                    log.error("포인트 롤백 실패 memberId={}, orderId={}", memberId, orderId, pointEx);
+                    log.error("CRITICAL: 포인트 롤백 실패 (관리자 수동 롤백 필요)memberId={}, orderId={}", memberId, orderId, pointEx);
                 }
             }
             throw new BusinessException(ErrorCode.TOSS_API_ERROR);
@@ -178,7 +176,7 @@ public class PaymentServiceImpl implements PaymentService {
         try {
             tossAdapter.requestCancel(payment.getPaymentKey(), requestDto.getCancelReason());
         } catch (Exception e) {
-            log.error("Toss 결제 취소 실패. paymentKey={}", payment.getPaymentKey(), e);
+            log.error("결제 취소 실패. paymentKey={}", payment.getPaymentKey(), e);
             throw new BusinessException(ErrorCode.TOSS_API_ERROR);
         }
 
@@ -196,7 +194,7 @@ public class PaymentServiceImpl implements PaymentService {
                 ));
                 log.info("결제 취소 및 포인트 환불 성공. orderId={}", requestDto.getOrderId());
             } catch (Exception e) {
-                log.error("결제 취소 성공, 포인트 환불 실패. (관리자 수동 적립 필요) orderId={}", requestDto.getOrderId(), e);
+                log.error("CRITICAL: 결제 취소 성공, 포인트 환불 실패. (관리자 수동 환불 필요) orderId={}", requestDto.getOrderId(), e);
             }
         }
         return PaymentCancelResponse.from(payment, requestDto.getCancelReason());
@@ -206,9 +204,9 @@ public class PaymentServiceImpl implements PaymentService {
     private void compensateTossPayment(String paymentKey, String reason) {
         try {
             tossAdapter.requestCancel(paymentKey, reason);
-            log.info("Toss 결제 자동 취소 성공. paymentKey={}", paymentKey);
+            log.info("결제 자동 취소 성공. paymentKey={}", paymentKey);
         } catch (Exception e) {
-            log.error("CRITICAL: Toss 결제 취소 실패. 수동 환불 필요 paymentKey={}", paymentKey, e);
+            log.error("CRITICAL: 결제 취소 실패. (관리자 수동 환불 필요) paymentKey={}", paymentKey, e);
         }
     }
 }
