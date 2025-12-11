@@ -168,7 +168,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public PaymentCancelResponse cancelPayment(PaymentCancelRequest requestDto) {
-        Payment payment = paymentRepository.findByPaymentKey(requestDto.getPaymentKey())
+        Payment payment = paymentRepository.findByPaymentKeyForUpdate(requestDto.getPaymentKey())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
 
         if (!payment.getStatus().equals(PaymentStatus.DONE)) {
