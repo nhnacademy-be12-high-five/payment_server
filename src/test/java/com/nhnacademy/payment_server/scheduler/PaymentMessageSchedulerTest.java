@@ -1,6 +1,5 @@
 package com.nhnacademy.payment_server.scheduler;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -12,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import com.nhnacademy.payment_server.entity.MessageStatus;
 import com.nhnacademy.payment_server.entity.PaymentMessageOutbox;
 import com.nhnacademy.payment_server.repository.PaymentMessageOutboxRepository;
+import com.nhnacademy.payment_server.service.PaymentOutboxService;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -36,20 +36,22 @@ class PaymentMessageSchedulerTest {
     @Mock
     private RabbitTemplate rabbitTemplate;
 
+    @Mock
+    private PaymentOutboxService outboxService;
+
     @Test
-    @DisplayName("대기 중인 메시지 없을 시 READY")
+    @DisplayName("대기 중인 메시지 없을 시 아무것도 안함")
     void sendPendingMessages_noMessages() {
         given(outboxRepository.findTop10ByStatusOrderByCreatedAtAsc(MessageStatus.READY))
                 .willReturn(Collections.emptyList());
 
         scheduler.sendPendingMessages();
 
-        // RabbitMQ 호출 0번
         verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), anyString());
     }
 
     @Test
-    @DisplayName("메시지 전송 성공 시 DONE")
+    @DisplayName("메시지 전송 성공 시 DONE 상태 변경 및 서비스 호출")
     void sendPendingMessages_success() {
         String payload = "{\"orderId\":1}";
         PaymentMessageOutbox message = PaymentMessageOutbox.builder()
@@ -68,13 +70,14 @@ class PaymentMessageSchedulerTest {
         // RabbitMQ 전송 메서드가 호출되었는지 확인
         verify(rabbitTemplate, times(1)).convertAndSend(eq("payment-success-queue"), eq(payload));
 
-        // 메시지 상태 DONE
-        assertThat(message.getStatus()).isEqualTo(MessageStatus.DONE);
+        // updateStatus 호출 되었는지 확인
+        verify(outboxService).updateStatus(1L, MessageStatus.DONE);
     }
 
     @Test
-    @DisplayName("RabbitMQ 전송 실패 시 READY 유지")
+    @DisplayName("RabbitMQ 전송 실패 시 재시도 카운트 증가 및 서비스 호출")
     void sendPendingMessages_failure() {
+        // given
         PaymentMessageOutbox message = PaymentMessageOutbox.builder()
                 .id(1L)
                 .payload("{}")
@@ -84,13 +87,17 @@ class PaymentMessageSchedulerTest {
         given(outboxRepository.findTop10ByStatusOrderByCreatedAtAsc(MessageStatus.READY))
                 .willReturn(List.of(message));
 
+        // RabbitMQ 실패 상황
         doThrow(new AmqpException("RabbitMQ Connection Failed"))
-                .when(rabbitTemplate).convertAndSend(anyString(), anyString());
+                .when(rabbitTemplate).convertAndSend(anyString(), anyObject()); // anyObject() 또는 eq("{}")
 
         scheduler.sendPendingMessages();
 
-        // 상태가 여전히 READY
-        assertThat(message.getStatus()).isEqualTo(MessageStatus.READY);
-        // 예외 catch -> 메서드 정상 종료
+        verify(outboxService).increaseRetryCount(1L);
+    }
+
+    // RabbitTemplate의 convertAndSend 인자 매칭용 헬퍼 (any() 사용 시 컴파일 에러 방지)
+    private Object anyObject() {
+        return org.mockito.ArgumentMatchers.any();
     }
 }
