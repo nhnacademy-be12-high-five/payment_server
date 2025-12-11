@@ -23,6 +23,7 @@ import com.nhnacademy.payment_server.exception.ErrorCode;
 import com.nhnacademy.payment_server.repository.PaymentMessageOutboxRepository;
 import com.nhnacademy.payment_server.repository.PaymentMethodRepository;
 import com.nhnacademy.payment_server.repository.PaymentRepository;
+import com.nhnacademy.payment_server.service.PaymentOutboxService;
 import com.nhnacademy.payment_server.service.PaymentService;
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -34,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
@@ -44,6 +44,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final TossPaymentAdapter tossAdapter;
     private final PaymentMessageOutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
+    private final PaymentOutboxService outboxService;
 
     @Override
     public PaymentConfirmResponse confirmPayment(PaymentConfirmRequest requestDto) {
@@ -139,21 +140,13 @@ public class PaymentServiceImpl implements PaymentService {
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
 
-        // db에 저장해야 생기는 id 값을 얻기 위한 객체
-        Payment savedPayment;
-
         try {
-            savedPayment = paymentRepository.save(payment);
-
-            PaymentMessageOutbox finalOutbox = PaymentMessageOutbox.builder()
-                    .paymentId(savedPayment.getId())
-                    .payload(outbox.getPayload())
-                    .status(MessageStatus.READY)
-                    .build();
-
-            outboxRepository.save(finalOutbox);
+            // DB 저장이 필요한 순간에만 서비스 호출 (짧은 트랜잭션)
+            Payment savedPayment = outboxService.savePaymentAndOutbox(payment, outbox);
 
             log.info("결제 및 Outbox DB 저장 완료. paymentId={}", savedPayment.getId());
+
+            return PaymentConfirmResponse.from(savedPayment);
 
         } catch (Exception e) {
             log.error("DB 저장 실패! 승인된 Toss 결제를 자동 취소합니다. paymentKey={}", tossResponse.getPaymentKey(), e);
@@ -170,11 +163,10 @@ public class PaymentServiceImpl implements PaymentService {
             }
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
-        return PaymentConfirmResponse.from(savedPayment);
     }
 
-
     @Override
+    @Transactional
     public PaymentCancelResponse cancelPayment(PaymentCancelRequest requestDto) {
         Payment payment = paymentRepository.findByPaymentKey(requestDto.getPaymentKey())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));

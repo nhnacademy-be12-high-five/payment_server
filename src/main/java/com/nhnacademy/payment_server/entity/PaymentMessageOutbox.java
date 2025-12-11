@@ -40,4 +40,11 @@ public class PaymentMessageOutbox {
 
     @CreatedDate
     private LocalDateTime createdAt;
+
+    @Builder.Default // 빌더 패턴 쓸 때 기본값 0 적용
+    private int retryCount = 0;
+
+    public void incrementRetryCount() {
+        this.retryCount++;
+    }
 }
