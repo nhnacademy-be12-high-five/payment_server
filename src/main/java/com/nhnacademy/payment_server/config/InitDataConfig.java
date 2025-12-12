@@ -16,7 +16,7 @@ public class InitDataConfig {
     public CommandLineRunner initPaymentMethods(PaymentMethodRepository repository) {
         return args -> {
             List<PaymentMethod> methods = List.of(
-                    PaymentMethod.builder().name("TOSS").alias("간편결제/신용카드").isActive(true).build(),
+                    PaymentMethod.builder().name("TOSS").alias("간편결제 / 신용카드").isActive(true).build(),
                     PaymentMethod.builder().name("BANK_TRANSFER").alias("계좌이체").isActive(false).build(),
                     PaymentMethod.builder().name("VIRTUAL_ACCOUNT").alias("가상계좌").isActive(false).build()
             );
