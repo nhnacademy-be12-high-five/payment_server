@@ -42,7 +42,7 @@ class InitDataConfigTest {
         assertThat(savedMethods).hasSize(3);
         assertThat(savedMethods)
                 .extracting(PaymentMethod::getName)
-                .containsExactlyInAnyOrder("TOSS", "TRANSFER", "VIRTUAL_ACCOUNT");
+                .containsExactlyInAnyOrder("TOSS", "BANK_TRANSFER", "VIRTUAL_ACCOUNT");
     }
 
     @Test
@@ -50,7 +50,7 @@ class InitDataConfigTest {
     void initializeMethods_skipSave() {
         List<PaymentMethod> existingMethods = List.of(
                 PaymentMethod.builder().name("TOSS").alias("간편결제 / 카드결제").isActive(true).build(),
-                PaymentMethod.builder().name("TRANSFER").alias("계좌이체").isActive(false).build(),
+                PaymentMethod.builder().name("BANK_TRANSFER").alias("계좌이체").isActive(false).build(),
                 PaymentMethod.builder().name("VIRTUAL_ACCOUNT").alias("무통장입금").isActive(false).build()
         );
         given(repository.findAll()).willReturn(existingMethods);
