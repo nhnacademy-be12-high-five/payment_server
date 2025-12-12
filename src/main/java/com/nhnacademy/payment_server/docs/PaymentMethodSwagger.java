@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 @Tag(name = "PaymentMethod API", description = "결제 수단 관련 API")
 public interface PaymentMethodSwagger {
 
-    @Operation(summary = "전체 결제 수단 조회", description = "모든 결제 수단을 조회합니다.")
+    @Operation(summary = "전체 결제 수단 조회", description = "모든 결제 수단을 조회합니다. (프론트에서 isActive 필드로 UI 구분)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공 (전체 결제수단 리스트 반환)"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
