@@ -33,13 +33,13 @@ class PaymentMethodControllerTest {
     private PaymentMethodService paymentMethodService;
 
     @Test
-    @DisplayName("사용자: 활성화된 결제 수단 조회 성공")
+    @DisplayName("결제 수단 조회 성공")
     void getActiveMethods_Success() throws Exception {
         // given
         PaymentMethodResponse toss = new PaymentMethodResponse(1L, "TOSS", "토스", true);
         PaymentMethodResponse point = new PaymentMethodResponse(2L, "POINT", "포인트", true);
 
-        given(paymentMethodService.getActiveMethods()).willReturn(List.of(toss, point));
+        given(paymentMethodService.getAllMethods()).willReturn(List.of(toss, point));
 
         // when & then
         mockMvc.perform(get("/api/payments/methods")

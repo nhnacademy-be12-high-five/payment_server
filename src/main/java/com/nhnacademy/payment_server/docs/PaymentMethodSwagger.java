@@ -15,16 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 @Tag(name = "PaymentMethod API", description = "결제 수단 관련 API")
 public interface PaymentMethodSwagger {
 
-    @Operation(summary = "사용 가능한 결제 수단 조회", description = "주문 결제 페이지에서 사용자에게 보여줄 활성화된 결제 수단 목록을 조회합니다.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "조회 성공 (활성화된 결제수단 리스트 반환)"),
-            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
-    })
-    ResponseEntity<List<PaymentMethodResponse>> getActiveMethods();
-
-
-    // 2. 관리자용 (전체 조회)
-    @Operation(summary = "[관리자] 전체 결제 수단 조회", description = "관리자 설정을 위해 활성/비활성 여부와 관계없이 모든 결제 수단을 조회합니다.")
+    @Operation(summary = "전체 결제 수단 조회", description = "모든 결제 수단을 조회합니다. (프론트에서 isActive 필드로 UI 구분)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공 (전체 결제수단 리스트 반환)"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
@@ -32,8 +23,7 @@ public interface PaymentMethodSwagger {
     ResponseEntity<List<PaymentMethodResponse>> getAllMethods();
 
 
-    // 3. 관리자용 (상태 변경)
-    @Operation(summary = "[관리자] 결제 수단 활성/비활성 토글", description = "특정 결제 수단의 사용 가능 여부를 변경합니다.")
+    @Operation(summary = "[관리자] 결제 수단 활성/비활성 토글", description = "결제 수단의 사용 가능 여부를 변경합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "상태 변경 성공"),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 결제 수단 ID"),

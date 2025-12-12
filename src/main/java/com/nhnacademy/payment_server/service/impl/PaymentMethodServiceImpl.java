@@ -19,13 +19,6 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
     private final PaymentMethodRepository paymentMethodRepository;
 
     @Override
-    public List<PaymentMethodResponse> getActiveMethods() {
-        return paymentMethodRepository.findByIsActiveTrue().stream()
-                .map(PaymentMethodResponse::from)
-                .toList();
-    }
-
-    @Override
     public List<PaymentMethodResponse> getAllMethods() {
         return paymentMethodRepository.findAll().stream()
                 .map(PaymentMethodResponse::from)
