@@ -60,7 +60,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         return switch (provider) {
             case "TOSS" -> processTossPayment(requestDto, paymentMethod);
-            case "TRANSFER", "VIRTUAL_ACCOUNT" -> throw new BusinessException(ErrorCode.NOT_IMPLEMENTED);
+            case "BANK_TRANSFER", "VIRTUAL_ACCOUNT" -> throw new BusinessException(ErrorCode.NOT_IMPLEMENTED);
             default -> throw new BusinessException(ErrorCode.UNSUPPORTED_METHOD);
         };
     }
