@@ -250,12 +250,12 @@ public class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("결제 실패: 아직 지원 안 하는 TRANSFER 결제")
+    @DisplayName("결제 실패: 아직 지원 안 하는 BANK_TRANSFER 결제")
     void confirmPayment_Fail_PointMethod() {
         PaymentConfirmRequest request = new PaymentConfirmRequest("key", "order", 100L, "TRANSFER");
 
-        PaymentMethod mockMethod = PaymentMethod.builder().name("TRANSFER").isActive(true).build();
-        given(paymentMethodRepository.findByName("TRANSFER")).willReturn(Optional.of(mockMethod));
+        PaymentMethod mockMethod = PaymentMethod.builder().name("BANK_TRANSFER").isActive(true).build();
+        given(paymentMethodRepository.findByName("BANK_TRANSFER")).willReturn(Optional.of(mockMethod));
 
         assertThatThrownBy(() -> paymentService.confirmPayment(request))
                 .isInstanceOf(BusinessException.class)
