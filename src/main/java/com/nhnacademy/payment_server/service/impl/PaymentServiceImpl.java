@@ -24,6 +24,7 @@ import com.nhnacademy.payment_server.repository.PaymentMethodRepository;
 import com.nhnacademy.payment_server.repository.PaymentRepository;
 import com.nhnacademy.payment_server.service.PaymentOutboxService;
 import com.nhnacademy.payment_server.service.PaymentService;
+import feign.FeignException;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -46,12 +47,21 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public PaymentConfirmResponse confirmPayment(PaymentConfirmRequest requestDto) {
+        // DB에서 결제 수단 조회
+        PaymentMethod paymentMethod = paymentMethodRepository.findByName(requestDto.getPaymentMethod())
+                .orElseThrow(() -> new BusinessException(ErrorCode.METHOD_NOT_FOUND));
+
+        // 관리자가 꺼둔 결제 수단을 선택 했을시
+        if (!paymentMethod.isActive()) {
+            throw new BusinessException(ErrorCode.METHOD_DISABLED);
+        }
+
         String provider = requestDto.getPaymentMethod().toUpperCase();
 
         return switch (provider) {
             case "TOSS" -> processTossPayment(requestDto);
-            case "POINT" -> throw new BusinessException(ErrorCode.UNSUPPORTED_METHOD);
-            default -> throw new BusinessException(ErrorCode.METHOD_NOT_FOUND);
+            case "TRANSFER", "VIRTUAL_ACCOUNT" -> throw new BusinessException(ErrorCode.NOT_IMPLEMENTED);
+            default -> throw new BusinessException(ErrorCode.UNSUPPORTED_METHOD);
         };
     }
 
@@ -60,7 +70,17 @@ public class PaymentServiceImpl implements PaymentService {
 
         // 검증을 위한 주문 서버 결제 정보
         String orderKey = requestDto.getOrderKey();
-        OrderValidationInfoResponse orderDto = orderClient.getOrderByKey(orderKey);
+        OrderValidationInfoResponse orderDto;
+
+        try {
+            orderDto = orderClient.getOrderByKey(orderKey);
+        } catch (FeignException.NotFound e) {
+            log.error("주문 정보를 찾을 수 없음: {}", orderKey);
+            throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
+        } catch (FeignException e) {
+            log.error("주문 서버 통신 오류: {}", orderKey, e);
+            throw new BusinessException(ErrorCode.ORDER_SERVER_ERROR);
+        }
 
         Long orderId = orderDto.getOrderId();
         Long memberId = orderDto.getUserId();
