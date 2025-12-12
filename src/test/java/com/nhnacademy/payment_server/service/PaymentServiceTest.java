@@ -252,7 +252,7 @@ public class PaymentServiceTest {
     @Test
     @DisplayName("결제 실패: 아직 지원 안 하는 BANK_TRANSFER 결제")
     void confirmPayment_Fail_PointMethod() {
-        PaymentConfirmRequest request = new PaymentConfirmRequest("key", "order", 100L, "TRANSFER");
+        PaymentConfirmRequest request = new PaymentConfirmRequest("key", "order", 100L, "BANK_TRANSFER");
 
         PaymentMethod mockMethod = PaymentMethod.builder().name("BANK_TRANSFER").isActive(true).build();
         given(paymentMethodRepository.findByName("BANK_TRANSFER")).willReturn(Optional.of(mockMethod));
