@@ -42,14 +42,14 @@ class InitDataConfigTest {
         assertThat(savedMethods).hasSize(3);
         assertThat(savedMethods)
                 .extracting(PaymentMethod::getName)
-                .containsExactlyInAnyOrder("Toss", "TRANSFER", "VIRTUAL_ACCOUNT");
+                .containsExactlyInAnyOrder("TOSS", "TRANSFER", "VIRTUAL_ACCOUNT");
     }
 
     @Test
     @DisplayName("DB에 이미 데이터가 있으면 저장x (Branch: False)")
     void initializeMethods_skipSave() {
         List<PaymentMethod> existingMethods = List.of(
-                PaymentMethod.builder().name("Toss").alias("간편결제 / 카드결제").isActive(true).build(),
+                PaymentMethod.builder().name("TOSS").alias("간편결제 / 카드결제").isActive(true).build(),
                 PaymentMethod.builder().name("TRANSFER").alias("계좌이체").isActive(false).build(),
                 PaymentMethod.builder().name("VIRTUAL_ACCOUNT").alias("무통장입금").isActive(false).build()
         );
