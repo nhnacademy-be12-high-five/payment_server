@@ -127,6 +127,9 @@ public class PaymentServiceTest {
         // given
         PaymentConfirmRequest request = new PaymentConfirmRequest("testKey", "apple", 10000L, "TOSS");
 
+        PaymentMethod mockMethod = PaymentMethod.builder().name("TOSS").isActive(true).build();
+        given(paymentMethodRepository.findByName("TOSS")).willReturn(Optional.of(mockMethod));
+
         OrderValidationInfoResponse orderDto = OrderValidationInfoResponse.builder()
                 .orderId(100L)
                 .orderKey("apple")
@@ -151,6 +154,9 @@ public class PaymentServiceTest {
     void confirmPayment_Fail_AmountMismatch() {
         String tossOrderId = "hack_order";
         PaymentConfirmRequest request = new PaymentConfirmRequest("key", tossOrderId, 100L, "TOSS"); // 100원 요청
+
+        PaymentMethod mockMethod = PaymentMethod.builder().name("TOSS").isActive(true).build();
+        given(paymentMethodRepository.findByName("TOSS")).willReturn(Optional.of(mockMethod));
 
         OrderValidationInfoResponse orderDto = OrderValidationInfoResponse.builder()
                 .paymentAmount(50000L)
@@ -244,13 +250,16 @@ public class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("결제 실패: 아직 지원 안 하는 POINT 결제")
+    @DisplayName("결제 실패: 아직 지원 안 하는 TRANSFER 결제")
     void confirmPayment_Fail_PointMethod() {
-        PaymentConfirmRequest request = new PaymentConfirmRequest("key", "order", 100L, "POINT");
+        PaymentConfirmRequest request = new PaymentConfirmRequest("key", "order", 100L, "TRANSFER");
+
+        PaymentMethod mockMethod = PaymentMethod.builder().name("TRANSFER").isActive(true).build();
+        given(paymentMethodRepository.findByName("TRANSFER")).willReturn(Optional.of(mockMethod));
 
         assertThatThrownBy(() -> paymentService.confirmPayment(request))
                 .isInstanceOf(BusinessException.class)
-                .extracting("errorCode").isEqualTo(ErrorCode.UNSUPPORTED_METHOD);
+                .extracting("errorCode").isEqualTo(ErrorCode.NOT_IMPLEMENTED);
     }
 
     @Test
