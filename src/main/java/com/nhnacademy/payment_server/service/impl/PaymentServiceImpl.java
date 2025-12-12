@@ -59,13 +59,13 @@ public class PaymentServiceImpl implements PaymentService {
         String provider = requestDto.getPaymentMethod().toUpperCase();
 
         return switch (provider) {
-            case "TOSS" -> processTossPayment(requestDto);
+            case "TOSS" -> processTossPayment(requestDto, paymentMethod);
             case "TRANSFER", "VIRTUAL_ACCOUNT" -> throw new BusinessException(ErrorCode.NOT_IMPLEMENTED);
             default -> throw new BusinessException(ErrorCode.UNSUPPORTED_METHOD);
         };
     }
 
-    public PaymentConfirmResponse processTossPayment(PaymentConfirmRequest requestDto) {
+    public PaymentConfirmResponse processTossPayment(PaymentConfirmRequest requestDto, PaymentMethod paymentMethod) {
         log.info("결제 승인 요청 진입 orderKey: {}, amount: {}", requestDto.getOrderKey(), requestDto.getAmount());
 
         // 검증을 위한 주문 서버 결제 정보
@@ -120,9 +120,6 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         // 결제 정보 DB 저장
-        PaymentMethod paymentMethod = paymentMethodRepository.findByName("TOSS")
-                .orElseThrow(() -> new BusinessException(ErrorCode.METHOD_NOT_FOUND));
-
         Payment payment = Payment.builder()
                 .paymentMethod(paymentMethod)
                 .orderId(orderId)
