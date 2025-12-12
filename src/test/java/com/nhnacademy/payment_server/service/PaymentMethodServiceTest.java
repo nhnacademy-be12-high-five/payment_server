@@ -28,19 +28,6 @@ public class PaymentMethodServiceTest {
     PaymentMethodServiceImpl paymentMethodService;
 
     @Test
-    @DisplayName("활성화된 결제수단 조회 성공")
-    void getActiveMethods_success() {
-        PaymentMethod m1 = PaymentMethod.builder().name("TOSS").isActive(true).build();
-        ReflectionTestUtils.setField(m1, "id", 1L);
-        when(paymentMethodRepository.findByIsActiveTrue()).thenReturn(List.of(m1));
-
-        List<PaymentMethodResponse> list = paymentMethodService.getActiveMethods();
-
-        assertThat(list).hasSize(1);
-        assertThat(list.getFirst().getName()).isEqualTo("TOSS");
-    }
-
-    @Test
     @DisplayName("모든 결제수단 조회 성공")
     void getAllMethods_success() {
         PaymentMethod m1 = PaymentMethod.builder().name("TOSS").isActive(true).build();

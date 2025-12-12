@@ -22,11 +22,6 @@ public class PaymentMethodController implements PaymentMethodSwagger {
     private final PaymentMethodService paymentMethodService;
 
     @GetMapping
-    public ResponseEntity<List<PaymentMethodResponse>> getActiveMethods() {
-        return ResponseEntity.ok(paymentMethodService.getActiveMethods());
-    }
-
-    @GetMapping("/admin")
     public ResponseEntity<List<PaymentMethodResponse>> getAllMethods() {
         return ResponseEntity.ok(paymentMethodService.getAllMethods());
     }
