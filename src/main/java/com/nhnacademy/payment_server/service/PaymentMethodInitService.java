@@ -18,7 +18,7 @@ public class PaymentMethodInitService {
     @Transactional
     public void initializeMethods() {
         List<PaymentMethod> targetMethods = List.of(
-                PaymentMethod.builder().name("Toss").alias("간편결제 / 카드결제").isActive(true).build(),
+                PaymentMethod.builder().name("TOSS").alias("간편결제 / 카드결제").isActive(true).build(),
                 PaymentMethod.builder().name("TRANSFER").alias("계좌이체").isActive(false).build(),
                 PaymentMethod.builder().name("VIRTUAL_ACCOUNT").alias("무통장입금").isActive(false).build()
         );
