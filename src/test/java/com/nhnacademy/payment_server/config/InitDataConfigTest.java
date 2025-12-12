@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 
 import com.nhnacademy.payment_server.entity.PaymentMethod;
 import com.nhnacademy.payment_server.repository.PaymentMethodRepository;
+import com.nhnacademy.payment_server.service.PaymentMethodInitService;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +18,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.CommandLineRunner;
 
 @ExtendWith(MockitoExtension.class)
 class InitDataConfigTest {
@@ -26,15 +26,14 @@ class InitDataConfigTest {
     private PaymentMethodRepository repository;
 
     @InjectMocks
-    private InitDataConfig initDataConfig;
+    private PaymentMethodInitService initService;
 
     @Test
     @DisplayName("DB에 데이터가 없으면 3개 모두 저장 (Branch: True)")
-    void initPaymentMethods_saveAll() throws Exception {
+    void initializeMethods_saveAll() {
         given(repository.findAll()).willReturn(Collections.emptyList());
 
-        CommandLineRunner runner = initDataConfig.initPaymentMethods();
-        runner.run();
+        initService.initializeMethods(); // 서비스 메서드 직접 호출
 
         ArgumentCaptor<List<PaymentMethod>> captor = ArgumentCaptor.forClass(List.class);
         verify(repository).saveAll(captor.capture());
@@ -43,21 +42,20 @@ class InitDataConfigTest {
         assertThat(savedMethods).hasSize(3);
         assertThat(savedMethods)
                 .extracting(PaymentMethod::getName)
-                .containsExactlyInAnyOrder("Toss", "TRANSFER", "VIRTUAL_ACCOUNT");
+                .containsExactlyInAnyOrder("TOSS", "TRANSFER", "VIRTUAL_ACCOUNT");
     }
 
     @Test
     @DisplayName("DB에 이미 데이터가 있으면 저장x (Branch: False)")
-    void initPaymentMethods_skipSave() throws Exception {
+    void initializeMethods_skipSave() {
         List<PaymentMethod> existingMethods = List.of(
-                PaymentMethod.builder().name("Toss").alias("간편결제/신용카드").isActive(true).build(),
+                PaymentMethod.builder().name("TOSS").alias("간편결제 / 카드결제").isActive(true).build(),
                 PaymentMethod.builder().name("TRANSFER").alias("계좌이체").isActive(false).build(),
                 PaymentMethod.builder().name("VIRTUAL_ACCOUNT").alias("무통장입금").isActive(false).build()
         );
         given(repository.findAll()).willReturn(existingMethods);
 
-        CommandLineRunner runner = initDataConfig.initPaymentMethods();
-        runner.run();
+        initService.initializeMethods();
 
         verify(repository, never()).saveAll(anyList());
     }
