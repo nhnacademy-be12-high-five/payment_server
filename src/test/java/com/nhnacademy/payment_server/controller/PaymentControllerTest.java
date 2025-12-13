@@ -39,7 +39,7 @@ class PaymentControllerTest {
         );
 
         PaymentConfirmResponse response = PaymentConfirmResponse.builder()
-                .paymentId("1")
+                .paymentId(1L)
                 .status(com.nhnacademy.payment_server.entity.PaymentStatus.DONE)
                 .amount(50000L)
                 .build();

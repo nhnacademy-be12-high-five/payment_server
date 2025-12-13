@@ -191,7 +191,7 @@ public class PaymentServiceTest {
         PaymentCancelResponse response = paymentService.cancelPayment(request);
 
         // then
-        assertThat(response.getStatus()).isEqualTo("CANCELED");
+        assertThat(response.getStatus()).isEqualTo(PaymentStatus.CANCELED);
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CANCELED);
 
         // Toss 취소 API 호출 확인
