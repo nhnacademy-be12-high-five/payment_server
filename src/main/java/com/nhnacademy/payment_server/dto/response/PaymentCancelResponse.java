@@ -1,6 +1,7 @@
 package com.nhnacademy.payment_server.dto.response;
 
 import com.nhnacademy.payment_server.entity.Payment;
+import com.nhnacademy.payment_server.entity.PaymentStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -18,7 +19,7 @@ public class PaymentCancelResponse {
     private Long paymentId;
 
     @Schema(description = "결제 상태 (CANCELED)", example = "CANCELED")
-    private String status;
+    private PaymentStatus status;
 
     @Schema(description = "취소된 금액", example = "50000")
     private Long canceledAmount;
@@ -32,7 +33,7 @@ public class PaymentCancelResponse {
     public static PaymentCancelResponse from(Payment payment, String cancelReason) {
         return PaymentCancelResponse.builder()
                 .paymentId(payment.getId())
-                .status(payment.getStatus().toString())
+                .status(payment.getStatus())
                 .canceledAmount(payment.getAmount())
                 .canceledAt(payment.getCancelledAt())
                 .cancelReason(cancelReason)
