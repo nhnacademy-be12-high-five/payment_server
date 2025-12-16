@@ -20,10 +20,11 @@ public enum ErrorCode {
     // 기능 없고 지원 예정
     NOT_IMPLEMENTED(HttpStatus.NOT_IMPLEMENTED, "P007", "추후 구현 예정인 결제 수단입니다."),
 
-    // 404 NOT_FOUND
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "P008", "존재하지 않는 결제 정보입니다."),
     METHOD_NOT_FOUND(HttpStatus.NOT_FOUND, "P009", "존재하지 않는 결제 수단입니다."),
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "P010", "존재하지 않는 주문 정보입니다."),
+
+    INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "P011", "시작일은 종료일보다 이후일 수 없습니다."),
 
     // 500 INTERNAL_SERVER_ERROR
     TOSS_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "P500", "토스 페이먼츠 처리 중 오류가 발생했습니다."),
