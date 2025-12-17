@@ -9,6 +9,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -23,7 +24,13 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @EntityListeners(AuditingEntityListener.class)
 @Entity
-@Table(name = "payment")
+@Table(
+        name = "payment",
+        indexes = {
+                @Index(name = "idx_payment_status_approved_at", columnList = "status, approvedAt")
+        }
+)
+
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Payment {
@@ -53,7 +60,7 @@ public class Payment {
     @Setter
     private PaymentStatus status;
 
-    @Column(nullable = false, length = 200)
+    @Column(nullable = false, length = 200, unique = true)
     private String paymentKey;
 
     @Column(nullable = false)

@@ -1,5 +1,6 @@
 package com.nhnacademy.payment_server.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
@@ -29,6 +30,7 @@ public class PaymentMessageOutbox {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private Long paymentId;      // 어떤 결제 건인지
 
     @Lob

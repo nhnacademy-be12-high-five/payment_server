@@ -4,9 +4,13 @@ import com.nhnacademy.payment_server.entity.MessageStatus;
 import com.nhnacademy.payment_server.entity.PaymentMessageOutbox;
 import com.nhnacademy.payment_server.repository.PaymentMessageOutboxRepository;
 import com.nhnacademy.payment_server.service.PaymentOutboxService;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -32,25 +36,29 @@ public class PaymentMessageScheduler {
             return;
         }
 
-        for (PaymentMessageOutbox message : messages) {
-            if (message.getRetryCount() >= MAX_RETRY_COUNT) {
-                log.warn("메시지 전송 실패 횟수 초과. FAILED 처리. id={}", message.getId());
-
-                outboxService.markAsFailed(message.getId());
-
+        for (PaymentMessageOutbox outboxMsg : messages) {
+            if (outboxMsg.getRetryCount() >= MAX_RETRY_COUNT) {
+                log.warn("메시지 전송 실패 횟수 초과. FAILED 처리. id={}", outboxMsg.getId());
+                outboxService.markAsFailed(outboxMsg.getId());
                 continue;
             }
+
             try {
-                // 트랜잭션 없는 RabbitMQ 전송
-                rabbitTemplate.convertAndSend("payment-success-queue", message.getPayload());
+                // 이미 JSON 문자열인 payload를 바이트 배열로 변환하여 전송
+                // Content-Type을 application/json으로 명시해야 받는 쪽에서 JSON으로 인식함
+                Message message = MessageBuilder
+                        .withBody(outboxMsg.getPayload().getBytes(StandardCharsets.UTF_8))
+                        .setContentType(MessageProperties.CONTENT_TYPE_JSON)
+                        .build();
 
-                outboxService.updateStatus(message.getId(), MessageStatus.DONE);
+                rabbitTemplate.send("payment-success-queue", message);
 
-                log.info("지연 메시지 발송 성공: outboxId={}", message.getId());
+                outboxService.updateStatus(outboxMsg.getId(), MessageStatus.DONE);
+                log.info("지연 메시지 발송 성공: outboxId={}", outboxMsg.getId());
+
             } catch (Exception e) {
-                log.error("메시지 발송 실패. count={} id={}", message.getRetryCount() + 1, message.getId(), e);
-
-                outboxService.increaseRetryCount(message.getId());
+                log.error("메시지 발송 실패. count={} id={}", outboxMsg.getRetryCount() + 1, outboxMsg.getId(), e);
+                outboxService.increaseRetryCount(outboxMsg.getId());
             }
         }
     }
