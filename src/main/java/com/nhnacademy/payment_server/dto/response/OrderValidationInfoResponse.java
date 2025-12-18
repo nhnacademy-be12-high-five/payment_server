@@ -12,7 +12,4 @@ import lombok.NoArgsConstructor;
 public class OrderValidationInfoResponse {
     private Long orderId;
     private Long paymentAmount;
-    private String orderKey;
-    private Long userId;
-    private long usedPoint; // 포인트는 안 쓸 수도 있으니까 혹시 null이라면 자동 0
 }
