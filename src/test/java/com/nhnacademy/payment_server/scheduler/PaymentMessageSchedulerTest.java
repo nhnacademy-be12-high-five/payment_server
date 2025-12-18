@@ -1,5 +1,6 @@
 package com.nhnacademy.payment_server.scheduler;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -22,6 +23,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,7 +49,7 @@ class PaymentMessageSchedulerTest {
 
         scheduler.sendPendingMessages();
 
-        verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), anyString());
+        verify(rabbitTemplate, never()).send(anyString(), any(Message.class));
     }
 
     @Test
@@ -67,17 +69,14 @@ class PaymentMessageSchedulerTest {
 
         scheduler.sendPendingMessages();
 
-        // RabbitMQ 전송 메서드가 호출되었는지 확인
-        verify(rabbitTemplate, times(1)).convertAndSend(eq("payment-success-queue"), eq(payload));
+        verify(rabbitTemplate, times(1)).send(eq("payment-success-queue"), any(Message.class));
 
-        // updateStatus 호출 되었는지 확인
         verify(outboxService).updateStatus(1L, MessageStatus.DONE);
     }
 
     @Test
     @DisplayName("RabbitMQ 전송 실패 시 재시도 카운트 증가 및 서비스 호출")
     void sendPendingMessages_failure() {
-        // given
         PaymentMessageOutbox message = PaymentMessageOutbox.builder()
                 .id(1L)
                 .payload("{}")
@@ -87,17 +86,11 @@ class PaymentMessageSchedulerTest {
         given(outboxRepository.findTop10ByStatusOrderByCreatedAtAsc(MessageStatus.READY))
                 .willReturn(List.of(message));
 
-        // RabbitMQ 실패 상황
         doThrow(new AmqpException("RabbitMQ Connection Failed"))
-                .when(rabbitTemplate).convertAndSend(anyString(), anyObject()); // anyObject() 또는 eq("{}")
+                .when(rabbitTemplate).send(anyString(), any(Message.class));
 
         scheduler.sendPendingMessages();
 
         verify(outboxService).increaseRetryCount(1L);
-    }
-
-    // RabbitTemplate의 convertAndSend 인자 매칭용 헬퍼 (any() 사용 시 컴파일 에러 방지)
-    private Object anyObject() {
-        return org.mockito.ArgumentMatchers.any();
     }
 }

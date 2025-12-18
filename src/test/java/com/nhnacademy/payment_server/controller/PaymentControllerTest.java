@@ -60,9 +60,7 @@ class PaymentControllerTest {
     @DisplayName("결제 취소 요청 성공")
     void cancelPayment_Success() throws Exception {
         // given
-        PaymentCancelRequest request = new PaymentCancelRequest(
-                "key", "변심", 1000L, 100L, 1L
-        );
+        PaymentCancelRequest request = new PaymentCancelRequest("key", "변심");
 
         // when & then
         mockMvc.perform(post("/api/payments/cancel")
