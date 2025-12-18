@@ -58,24 +58,19 @@ public class PaymentServiceTest {
     @Test
     @DisplayName("결제 승인 성공: 모든 검증 통과 및 저장 완료")
     void confirmPayment_Success() {
-        // given
         String paymentKey = "test_key";
         String tossOrderId = "toss_123";
         Long orderId = 100L;
         Long amount = 50000L;
-        Long memberId = 1L;
 
         PaymentConfirmRequest request = new PaymentConfirmRequest(paymentKey, tossOrderId, amount, "TOSS");
 
-        // 1. 주문 서버 응답 Mocking
         OrderValidationInfoResponse orderDto = OrderValidationInfoResponse.builder()
                 .orderId(orderId)
-                .userId(memberId)
                 .paymentAmount(amount)
                 .build();
         given(orderClient.getOrderByKey(tossOrderId)).willReturn(orderDto);
 
-        // 2. Toss 응답 Mocking
         TossConfirmResponse tossResponse = TossConfirmResponse.builder()
                 .method("카드")
                 .status("DONE")
@@ -87,11 +82,10 @@ public class PaymentServiceTest {
 
         given(tossPaymentAdapter.requestConfirm(any(), any(), any())).willReturn(tossResponse);
 
-        // 3. 결제 수단 조회 Mocking
         PaymentMethod method = new PaymentMethod("TOSS", "토스", true);
+
         given(paymentMethodRepository.findByName("TOSS")).willReturn(Optional.of(method));
 
-        // 4. 저장 Mocking (ID가 있는 객체 리턴)
         Payment savedPayment = new Payment(method, orderId, LocalDateTime.now(), LocalDateTime.now(), PaymentStatus.DONE, paymentKey, amount);
 
         ReflectionTestUtils.setField(savedPayment, "id", 1L);
@@ -99,15 +93,11 @@ public class PaymentServiceTest {
         given(outboxService.savePaymentAndOutbox(any(Payment.class), any(PaymentMessageOutbox.class)))
                 .willReturn(savedPayment);
 
-        // when
         PaymentConfirmResponse response = paymentService.confirmPayment(request);
 
-        // then
         assertThat(response.getStatus()).isEqualTo(PaymentStatus.DONE);
 
-        // OUTBOX 저장 확인
         verify(outboxService).savePaymentAndOutbox(any(Payment.class), any(PaymentMessageOutbox.class));
-
     }
 
     @Test
@@ -121,7 +111,6 @@ public class PaymentServiceTest {
 
         OrderValidationInfoResponse orderDto = OrderValidationInfoResponse.builder()
                 .orderId(100L)
-                .userId(1L)
                 .paymentAmount(10000L)
                 .build();
         given(orderClient.getOrderByKey("apple")).willReturn(orderDto);
@@ -145,7 +134,6 @@ public class PaymentServiceTest {
 
         OrderValidationInfoResponse orderDto = OrderValidationInfoResponse.builder()
                 .orderId(100L)
-                .userId(1L)
                 .paymentAmount(10000L)
                 .build();
         given(orderClient.getOrderByKey(tossOrderId)).willReturn(orderDto);
@@ -185,7 +173,7 @@ public class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("결제 취소 실패: 이미 취소된 결제는 다시 취소 불가")
+    @DisplayName("결제 취소 실패: 이미 취소된 결제")
     void cancelPayment_Fail_AlreadyCanceled() {
         // given
         String paymentKey = "already_canceled_key";
@@ -235,7 +223,7 @@ public class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("결제 실패: 아직 지원 안 하는 BANK_TRANSFER 결제")
+    @DisplayName("결제 실패: 지원 예정인 결제 수단")
     void confirmPayment_Fail_PointMethod() {
         PaymentConfirmRequest request = new PaymentConfirmRequest("key", "order", 100L, "BANK_TRANSFER");
 

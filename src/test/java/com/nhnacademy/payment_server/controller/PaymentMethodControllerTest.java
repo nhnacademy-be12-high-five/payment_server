@@ -37,9 +37,9 @@ class PaymentMethodControllerTest {
     void getActiveMethods_Success() throws Exception {
         // given
         PaymentMethodResponse toss = new PaymentMethodResponse(1L, "TOSS", "토스", true);
-        PaymentMethodResponse point = new PaymentMethodResponse(2L, "BANK_TRANSFER", "무통장입금", true);
+        PaymentMethodResponse bankTransfer = new PaymentMethodResponse(2L, "BANK_TRANSFER", "무통장입금", true);
 
-        given(paymentMethodService.getAllMethods()).willReturn(List.of(toss, point));
+        given(paymentMethodService.getAllMethods()).willReturn(List.of(toss, bankTransfer));
 
         // when & then
         mockMvc.perform(get("/api/payments/methods")

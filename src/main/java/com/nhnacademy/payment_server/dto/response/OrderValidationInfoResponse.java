@@ -11,7 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class OrderValidationInfoResponse {
     private Long orderId;
-    private Long userId;
     private Long paymentAmount;
-    private String orderKey;
 }
