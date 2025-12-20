@@ -162,7 +162,7 @@ public class PaymentServiceTest {
         given(paymentRepository.findByPaymentKeyForUpdate(paymentKey)).willReturn(Optional.of(payment));
 
         // when
-        PaymentCancelResponse response = paymentService.cancelPayment(request);
+        PaymentCancelResponse response = paymentService.cancelPayment("key", request);
 
         // then
         assertThat(response.getStatus()).isEqualTo(PaymentStatus.CANCELED);
@@ -188,7 +188,7 @@ public class PaymentServiceTest {
         given(paymentRepository.findByPaymentKeyForUpdate(paymentKey)).willReturn(Optional.of(payment));
 
         // when & then
-        assertThatThrownBy(() -> paymentService.cancelPayment(request))
+        assertThatThrownBy(() -> paymentService.cancelPayment("key", request))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.INVALID_PAYMENT_STATUS);
 
@@ -205,7 +205,7 @@ public class PaymentServiceTest {
         given(paymentRepository.findByPaymentKeyForUpdate("unknown_key")).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> paymentService.cancelPayment(request))
+        assertThatThrownBy(() -> paymentService.cancelPayment("key", request))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.PAYMENT_NOT_FOUND);
     }

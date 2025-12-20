@@ -14,5 +14,5 @@ public interface PaymentService {
      * 롤백 처리 (Toss 실패 시 포인트 환불)
      */
     PaymentConfirmResponse confirmPayment(PaymentConfirmRequest requestDto);
-    PaymentCancelResponse cancelPayment(PaymentCancelRequest requestDto);
+    PaymentCancelResponse cancelPayment(String paymentKey, PaymentCancelRequest requestDto);
 }

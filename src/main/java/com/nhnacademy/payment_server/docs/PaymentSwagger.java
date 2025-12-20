@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "Payment API", description = "결제 관련 API")
@@ -29,6 +30,6 @@ public interface PaymentSwagger {
             @ApiResponse(responseCode = "404", description = "존재하지 않는 결제 (paymentKey 불일치)"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류 또는 Toss 취소 실패")
     })
-    ResponseEntity<Void> cancelPayment(@RequestBody PaymentCancelRequest request);
+    ResponseEntity<Void> cancelPayment(@PathVariable String paymentKey, @RequestBody PaymentCancelRequest request);
 
 }
