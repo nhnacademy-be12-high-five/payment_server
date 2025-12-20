@@ -70,6 +70,6 @@ class PaymentControllerTest {
                 .andExpect(status().isOk()); // Void 반환이라 Body 검증 없음
 
         // 서비스 호출 여부 확인
-        verify(paymentService).cancelPayment(any(PaymentCancelRequest.class));
+        verify(paymentService).cancelPayment("key", any(PaymentCancelRequest.class));
     }
 }

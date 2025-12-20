@@ -7,6 +7,7 @@ import com.nhnacademy.payment_server.dto.response.PaymentConfirmResponse;
 import com.nhnacademy.payment_server.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,9 +27,9 @@ public class PaymentController implements PaymentSwagger {
         return ResponseEntity.ok(responseDto);
     }
 
-    @PostMapping("/cancel")
-    public ResponseEntity<Void> cancelPayment(@RequestBody PaymentCancelRequest request) {
-        paymentService.cancelPayment(request);
+    @PostMapping("/{paymentKey}/cancel")
+    public ResponseEntity<Void> cancelPayment(@PathVariable String paymentKey, @RequestBody PaymentCancelRequest request) {
+        paymentService.cancelPayment(paymentKey, request);
         return ResponseEntity.ok().build();
     }
 }

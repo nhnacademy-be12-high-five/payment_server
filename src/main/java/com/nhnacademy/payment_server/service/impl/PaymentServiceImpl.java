@@ -151,18 +151,22 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public PaymentCancelResponse cancelPayment(PaymentCancelRequest requestDto) {
-        Payment payment = paymentRepository.findByPaymentKeyForUpdate(requestDto.getPaymentKey())
+    public PaymentCancelResponse cancelPayment(String paymentKey, PaymentCancelRequest requestDto) {
+        Payment payment = paymentRepository.findByPaymentKeyForUpdate(paymentKey)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        if (payment.getStatus() == PaymentStatus.CANCELED) {
+            return PaymentCancelResponse.from(payment, requestDto.getCancelReason());
+        }
 
         if (!payment.getStatus().equals(PaymentStatus.DONE)) {
             throw new BusinessException(ErrorCode.INVALID_PAYMENT_STATUS);
         }
 
         try {
-            tossAdapter.requestCancel(payment.getPaymentKey(), requestDto.getCancelReason());
+            tossAdapter.requestCancel(paymentKey, requestDto.getCancelReason());
         } catch (Exception e) {
-            log.error("결제 취소 실패. paymentKey={}", payment.getPaymentKey(), e);
+            log.error("결제 취소 실패. paymentKey={}", paymentKey, e);
 
             throw new BusinessException(ErrorCode.TOSS_API_ERROR);
         }
