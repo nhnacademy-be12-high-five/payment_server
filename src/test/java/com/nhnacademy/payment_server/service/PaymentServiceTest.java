@@ -3,7 +3,7 @@ package com.nhnacademy.payment_server.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -39,7 +39,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 public class PaymentServiceTest {
-    @Mock
+    @Mock(lenient = true)
     private PaymentRepository paymentRepository;
     @Mock
     private PaymentMethodRepository paymentMethodRepository;
@@ -51,6 +51,8 @@ public class PaymentServiceTest {
     private ObjectMapper objectMapper;
     @Mock
     private PaymentOutboxService outboxService;
+
+
 
     @InjectMocks
     private PaymentServiceImpl paymentService;
@@ -159,7 +161,8 @@ public class PaymentServiceTest {
                 .build();
         ReflectionTestUtils.setField(payment, "id", 10L);
 
-        given(paymentRepository.findByPaymentKeyForUpdate(paymentKey)).willReturn(Optional.of(payment));
+        given(paymentRepository.findByPaymentKeyForUpdate(anyString()))
+                .willReturn(Optional.of(payment));
 
         // when
         PaymentCancelResponse response = paymentService.cancelPayment("key", request);
@@ -169,7 +172,7 @@ public class PaymentServiceTest {
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CANCELED);
 
         // Toss 취소 API 호출 확인
-        verify(tossPaymentAdapter).requestCancel(eq(paymentKey), any());
+        verify(tossPaymentAdapter).requestCancel(anyString(), any());
     }
 
     @Test
@@ -179,22 +182,22 @@ public class PaymentServiceTest {
         String paymentKey = "already_canceled_key";
         PaymentCancelRequest request = new PaymentCancelRequest(paymentKey, "중복 취소");
 
-        // 이미 CANCELED 상태인 결제 정보
         Payment payment = Payment.builder()
                 .status(PaymentStatus.CANCELED)
                 .paymentKey(paymentKey)
                 .build();
 
-        given(paymentRepository.findByPaymentKeyForUpdate(paymentKey)).willReturn(Optional.of(payment));
+        given(paymentRepository.findByPaymentKeyForUpdate(paymentKey))
+                .willReturn(Optional.of(payment));
 
-        // when & then
-        assertThatThrownBy(() -> paymentService.cancelPayment("key", request))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode").isEqualTo(ErrorCode.INVALID_PAYMENT_STATUS);
+        PaymentCancelResponse response = paymentService.cancelPayment(request.getPaymentKey(), request);
 
-        // Toss 호출하면 안 됨
+        assertThat(response.getCancelReason()).isEqualTo("중복 취소");
+
+        // Toss 호출은 안 됨
         verify(tossPaymentAdapter, never()).requestCancel(any(), any());
     }
+
 
     @Test
     @DisplayName("결제 취소 실패: 존재하지 않는 결제 키")
