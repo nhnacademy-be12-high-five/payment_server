@@ -17,22 +17,26 @@ public class PaymentStatService {
 
     private final PaymentRepository paymentRepository;
 
-    // 전체 요약 통계
     public PaymentStatsResponse getTotalStats() {
-        Long sales = paymentRepository.sumAmountByStatus(PaymentStatus.DONE).orElse(0L);
-        Long cancels = paymentRepository.sumAmountByStatus(PaymentStatus.CANCELED).orElse(0L);
+        Long totalPayments = paymentRepository.sumAmountByStatusIn(
+                List.of(PaymentStatus.DONE, PaymentStatus.CANCELED)
+        ).orElse(0L);
+
+        Long canceledAmount = paymentRepository.sumAmountByStatus(PaymentStatus.CANCELED).orElse(0L);
         long successCount = paymentRepository.countByStatus(PaymentStatus.DONE);
         long cancelCount = paymentRepository.countByStatus(PaymentStatus.CANCELED);
 
         return PaymentStatsResponse.builder()
-                .totalSalesAmount(sales)
-                .totalCancelAmount(cancels)
-                .netSalesAmount(sales - cancels)
+                .totalSalesAmount(totalPayments)
+                .totalCancelAmount(canceledAmount)
+                .netSalesAmount(totalPayments - canceledAmount)
                 .successCount(successCount)
                 .cancelCount(cancelCount)
                 .totalTransactionCount(successCount + cancelCount)
                 .build();
     }
+
+
 
     // 기간별 일일 매출 통계
     public List<DailySalesResponse> getDailyStats(LocalDateTime start, LocalDateTime end) {
