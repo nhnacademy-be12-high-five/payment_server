@@ -38,14 +38,15 @@ class PaymentStatServiceTest {
         long successCount = 10L;
         long cancelCount = 2L;
 
-        given(paymentRepository.sumAmountByStatus(PaymentStatus.DONE))
-                .willReturn(Optional.of(salesAmount));
+        given(paymentRepository.sumAmountByStatusIn(List.of(PaymentStatus.DONE, PaymentStatus.CANCELED)))
+                .willReturn(Optional.of(100_000L));
         given(paymentRepository.sumAmountByStatus(PaymentStatus.CANCELED))
-                .willReturn(Optional.of(cancelAmount));
+                .willReturn(Optional.of(20_000L));
         given(paymentRepository.countByStatus(PaymentStatus.DONE))
-                .willReturn(successCount);
+                .willReturn(10L);
         given(paymentRepository.countByStatus(PaymentStatus.CANCELED))
-                .willReturn(cancelCount);
+                .willReturn(2L);
+
 
         // when
         PaymentStatsResponse response = paymentStatService.getTotalStats();
@@ -67,9 +68,7 @@ class PaymentStatServiceTest {
     @Test
     @DisplayName("전체 통계 조회: 데이터가 없을 경우 (0 반환 확인)")
     void getTotalStats_NoData() {
-        // given
-        // sumAmountByStatus가 비어있을 때 (Optional.empty) -> orElse(0L) 동작 확인
-        given(paymentRepository.sumAmountByStatus(PaymentStatus.DONE))
+        given(paymentRepository.sumAmountByStatusIn(List.of(PaymentStatus.DONE, PaymentStatus.CANCELED)))
                 .willReturn(Optional.empty());
         given(paymentRepository.sumAmountByStatus(PaymentStatus.CANCELED))
                 .willReturn(Optional.empty());
@@ -78,10 +77,8 @@ class PaymentStatServiceTest {
         given(paymentRepository.countByStatus(PaymentStatus.CANCELED))
                 .willReturn(0L);
 
-        // when
         PaymentStatsResponse response = paymentStatService.getTotalStats();
 
-        // then
         assertThat(response.getTotalSalesAmount()).isEqualTo(0L);
         assertThat(response.getTotalCancelAmount()).isEqualTo(0L);
         assertThat(response.getNetSalesAmount()).isEqualTo(0L);
