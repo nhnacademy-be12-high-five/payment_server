@@ -15,5 +15,4 @@ public class PaymentCancelRequest {
 
     @Schema(description = "취소 사유", example = "단순 변심")
     private String cancelReason;
-
 }
