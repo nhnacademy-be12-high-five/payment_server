@@ -25,6 +25,9 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.status = :status")
     Optional<Long> sumAmountByStatus(@Param("status") PaymentStatus status);
 
+    @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.status IN :statuses")
+    Optional<Long> sumAmountByStatusIn(@Param("statuses") List<PaymentStatus> statuses);
+
     // 상태별 건수
     long countByStatus(PaymentStatus status);
 
