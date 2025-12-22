@@ -1,7 +1,9 @@
 package com.nhnacademy.payment_server.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -59,17 +61,20 @@ class PaymentControllerTest {
     @Test
     @DisplayName("결제 취소 요청 성공")
     void cancelPayment_Success() throws Exception {
-        // given
         PaymentCancelRequest request = new PaymentCancelRequest("key", "변심");
 
-        // when & then
-        mockMvc.perform(post("/api/payments/cancel")
+        // void 메서드 mock
+        doAnswer(invocation -> null)
+                .when(paymentService)
+                .cancelPayment(eq("key"), any(PaymentCancelRequest.class));
+
+        mockMvc.perform(post("/api/payments/{paymentKey}/cancel", "key")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andDo(print())
-                .andExpect(status().isOk()); // Void 반환이라 Body 검증 없음
+                .andExpect(status().isOk());
 
-        // 서비스 호출 여부 확인
-        verify(paymentService).cancelPayment("key", any(PaymentCancelRequest.class));
+        verify(paymentService).cancelPayment(eq("key"), any(PaymentCancelRequest.class));
     }
+
+
 }
