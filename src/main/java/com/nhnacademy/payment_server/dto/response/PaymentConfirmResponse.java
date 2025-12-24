@@ -20,12 +20,15 @@ public class PaymentConfirmResponse {
     private PaymentStatus status;
     @Schema(description = "결제 완료된 금액(영수증)", example = "50000")
     private Long amount;
+    @Schema(description = "주문 번호", example = "1")
+    private Long orderId;
 
     public static PaymentConfirmResponse from(Payment payment) {
         return PaymentConfirmResponse.builder()
                 .paymentId(payment.getId())
                 .status(payment.getStatus())
                 .amount(payment.getAmount())
+                .orderId(payment.getOrderId())
                 .build();
     }
 }
