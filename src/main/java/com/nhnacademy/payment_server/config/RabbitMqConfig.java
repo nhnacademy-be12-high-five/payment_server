@@ -15,11 +15,6 @@ public class RabbitMqConfig {
     }
 
     @Bean
-    public Queue paymentFailQueue() {
-        return new Queue("payment-fail-queue", true);
-    }
-
-    @Bean
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }
