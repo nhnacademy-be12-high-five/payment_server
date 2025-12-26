@@ -9,10 +9,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface PaymentMessageOutboxRepository extends JpaRepository<PaymentMessageOutbox, Long> {
     @Query(value = """
-        SELECT * FROM payment_message_outbox 
-        WHERE status = :#{#status.name()} 
-        ORDER BY created_at ASC 
-        LIMIT :limit 
+        SELECT * FROM payment_message_outbox
+        WHERE status = :#{#status.name()}
+        ORDER BY created_at ASC
+        LIMIT :limit
         FOR UPDATE SKIP LOCKED
         """, nativeQuery = true)
     List<PaymentMessageOutbox> findPendingMessages(
