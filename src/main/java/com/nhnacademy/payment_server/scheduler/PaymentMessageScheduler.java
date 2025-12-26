@@ -14,6 +14,7 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
@@ -27,10 +28,10 @@ public class PaymentMessageScheduler {
 
     // 2초마다 실행
     @Scheduled(fixedDelay = 2000)
+    @Transactional
     public void sendPendingMessages() {
-        // 제일 먼저 도착한 대기 메시지 상위 10개 조회
         List<PaymentMessageOutbox> messages =
-                outboxRepository.findTop10ByStatusOrderByCreatedAtAsc(MessageStatus.READY);
+                outboxRepository.findPendingMessages(MessageStatus.READY, 10);
 
         if (messages.isEmpty()) {
             return;
@@ -38,8 +39,8 @@ public class PaymentMessageScheduler {
 
         for (PaymentMessageOutbox outboxMsg : messages) {
             if (outboxMsg.getRetryCount() >= MAX_RETRY_COUNT) {
-                log.warn("메시지 전송 실패 횟수 초과. FAILED 처리. id={}", outboxMsg.getId());
-                outboxService.markAsFailed(outboxMsg.getId());
+                log.warn("메시지 전송 실패 횟수 초과. 상태: FAILED. id={}", outboxMsg.getId());
+                outboxMsg.setStatus(MessageStatus.FAILED);
                 continue;
             }
 
@@ -53,7 +54,7 @@ public class PaymentMessageScheduler {
 
                 rabbitTemplate.send("payment-success-queue", message);
 
-                outboxService.updateStatus(outboxMsg.getId(), MessageStatus.DONE);
+                outboxMsg.setStatus(MessageStatus.DONE);
                 log.info("지연 메시지 발송 성공: outboxId={}", outboxMsg.getId());
 
             } catch (Exception e) {
