@@ -15,17 +15,12 @@ class RabbitMqConfigTest {
 
         // when
         Queue successQueue = config.paymentSuccessQueue();
-        Queue failQueue = config.paymentFailQueue();
         MessageConverter converter = config.jsonMessageConverter();
 
         // then
         assertThat(successQueue).isNotNull();
         assertThat(successQueue.getName()).isEqualTo("payment-success-queue");
         assertThat(successQueue.isDurable()).isTrue();
-
-        assertThat(failQueue).isNotNull();
-        assertThat(failQueue.getName()).isEqualTo("payment-fail-queue");
-        assertThat(failQueue.isDurable()).isTrue();
 
         assertThat(converter).isNotNull();
     }

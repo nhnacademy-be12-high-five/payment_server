@@ -32,21 +32,6 @@ class PaymentOutboxServiceTest {
     private PaymentRepository paymentRepository;
 
     @Test
-    @DisplayName("DONE으로 상태 변경 확인")
-    void updateStatus_success() {
-        Long outboxId = 1L;
-        PaymentMessageOutbox message = PaymentMessageOutbox.builder()
-                .status(MessageStatus.READY)
-                .build();
-
-        given(outboxRepository.findById(outboxId)).willReturn(Optional.of(message));
-
-        outboxService.updateStatus(outboxId, MessageStatus.DONE);
-
-        assertThat(message.getStatus()).isEqualTo(MessageStatus.DONE);
-    }
-
-    @Test
     @DisplayName("재시도 횟수 증가 확인")
     void increaseRetryCount_success() {
         Long outboxId = 1L;
@@ -61,20 +46,6 @@ class PaymentOutboxServiceTest {
         assertThat(message.getRetryCount()).isEqualTo(1);
     }
 
-    @Test
-    @DisplayName("FAILED로 상태 변경 확인")
-    void markAsFailed_success() {
-        Long outboxId = 1L;
-        PaymentMessageOutbox message = PaymentMessageOutbox.builder()
-                .status(MessageStatus.READY)
-                .build();
-
-        given(outboxRepository.findById(outboxId)).willReturn(Optional.of(message));
-
-        outboxService.markAsFailed(outboxId);
-
-        assertThat(message.getStatus()).isEqualTo(MessageStatus.FAILED);
-    }
 
     @Test
     @DisplayName("Payment 저장 후 ID를 Outbox에 잘 전달하는지 확인")

@@ -1,6 +1,8 @@
 package com.nhnacademy.payment_server.scheduler;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -44,7 +46,7 @@ class PaymentMessageSchedulerTest {
     @Test
     @DisplayName("대기 중인 메시지 없을 시 아무것도 안함")
     void sendPendingMessages_noMessages() {
-        given(outboxRepository.findTop10ByStatusOrderByCreatedAtAsc(MessageStatus.READY))
+        given(outboxRepository.findPendingMessages(eq(MessageStatus.READY), anyInt()))
                 .willReturn(Collections.emptyList());
 
         scheduler.sendPendingMessages();
@@ -59,19 +61,19 @@ class PaymentMessageSchedulerTest {
         PaymentMessageOutbox message = PaymentMessageOutbox.builder()
                 .id(1L)
                 .paymentId(100L)
-                .payload(payload)
+                .payload("{\"orderId\":1}")
                 .status(MessageStatus.READY)
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        given(outboxRepository.findTop10ByStatusOrderByCreatedAtAsc(MessageStatus.READY))
+        given(outboxRepository.findPendingMessages(eq(MessageStatus.READY), anyInt()))
                 .willReturn(List.of(message));
 
         scheduler.sendPendingMessages();
 
         verify(rabbitTemplate, times(1)).send(eq("payment-success-queue"), any(Message.class));
 
-        verify(outboxService).updateStatus(1L, MessageStatus.DONE);
+        assertThat(message.getStatus()).isEqualTo(MessageStatus.DONE);
     }
 
     @Test
@@ -83,7 +85,7 @@ class PaymentMessageSchedulerTest {
                 .status(MessageStatus.READY)
                 .build();
 
-        given(outboxRepository.findTop10ByStatusOrderByCreatedAtAsc(MessageStatus.READY))
+        given(outboxRepository.findPendingMessages(eq(MessageStatus.READY), anyInt()))
                 .willReturn(List.of(message));
 
         doThrow(new AmqpException("RabbitMQ Connection Failed"))
