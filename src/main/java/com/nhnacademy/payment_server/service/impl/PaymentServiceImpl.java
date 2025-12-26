@@ -24,6 +24,7 @@ import com.nhnacademy.payment_server.service.PaymentOutboxService;
 import com.nhnacademy.payment_server.service.PaymentService;
 import feign.FeignException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -99,7 +100,9 @@ public class PaymentServiceImpl implements PaymentService {
                 .paymentMethod(paymentMethod)
                 .orderId(orderId)
                 .requestedAt(tossResponse.getRequestedAt().toLocalDateTime())
-                .approvedAt(tossResponse.getApprovedAt().toLocalDateTime())
+                .approvedAt(tossResponse.getApprovedAt()
+                        .atZoneSameInstant(ZoneId.of("Asia/Seoul"))
+                        .toLocalDateTime())
                 .status(tossResponse.getStatusEnum())
                 .paymentKey(tossResponse.getPaymentKey())
                 .amount(tossResponse.getTotalAmount())
