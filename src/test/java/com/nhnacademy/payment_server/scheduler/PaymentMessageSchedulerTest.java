@@ -57,7 +57,6 @@ class PaymentMessageSchedulerTest {
     @Test
     @DisplayName("메시지 전송 성공 시 DONE 상태 변경 및 서비스 호출")
     void sendPendingMessages_success() {
-        String payload = "{\"orderId\":1}";
         PaymentMessageOutbox message = PaymentMessageOutbox.builder()
                 .id(1L)
                 .paymentId(100L)
