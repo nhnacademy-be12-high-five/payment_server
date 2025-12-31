@@ -8,6 +8,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nhnacademy.payment_server.config.TossPaymentConfig;
 import com.nhnacademy.payment_server.dto.response.TossConfirmResponse;
@@ -46,10 +47,10 @@ class TossPaymentAdapterTest {
 
     @BeforeEach
     void setUp() {
-        String TEST_SECRET_KEY = "test_sk";
-        given(tossPaymentConfig.getSecretKey()).willReturn(TEST_SECRET_KEY);
+        String testSecretKey = "test_sk";
+        given(tossPaymentConfig.getSecretKey()).willReturn(testSecretKey);
 
-        String keyWithColon = TEST_SECRET_KEY + ":";
+        String keyWithColon = testSecretKey + ":";
         encodedAuthHeader = "Basic " + Base64.getEncoder().encodeToString(keyWithColon.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -64,7 +65,7 @@ class TossPaymentAdapterTest {
 
     @Test
     @DisplayName("결제 승인 요청 성공")
-    void requestConfirm_Success() throws Exception {
+    void requestConfirm_Success() throws JsonProcessingException {
         String paymentKey = "test_pay_key";
         String orderId = "order_123";
         Long amount = 50000L;
@@ -97,7 +98,7 @@ class TossPaymentAdapterTest {
 
     @Test
     @DisplayName("결제 취소 요청 성공")
-    void requestCancel_Success() throws Exception {
+    void requestCancel_Success() {
         String paymentKey = "test_pay_key";
         String reason = "단순 변심";
 

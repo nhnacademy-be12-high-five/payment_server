@@ -79,10 +79,10 @@ class PaymentStatServiceTest {
 
         PaymentStatsResponse response = paymentStatService.getTotalStats();
 
-        assertThat(response.getTotalSalesAmount()).isEqualTo(0L);
-        assertThat(response.getTotalCancelAmount()).isEqualTo(0L);
-        assertThat(response.getNetSalesAmount()).isEqualTo(0L);
-        assertThat(response.getTotalTransactionCount()).isEqualTo(0L);
+        assertThat(response.getTotalSalesAmount()).isZero();
+        assertThat(response.getTotalCancelAmount()).isZero();
+        assertThat(response.getNetSalesAmount()).isZero();
+        assertThat(response.getTotalTransactionCount()).isZero();
     }
 
     @Test

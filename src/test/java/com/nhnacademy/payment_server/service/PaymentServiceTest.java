@@ -38,8 +38,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-public class PaymentServiceTest {
-    @Mock(lenient = true)
+class PaymentServiceTest {
+    @Mock
     private PaymentRepository paymentRepository;
     @Mock
     private PaymentMethodRepository paymentMethodRepository;
@@ -202,15 +202,15 @@ public class PaymentServiceTest {
     @Test
     @DisplayName("결제 취소 실패: 존재하지 않는 결제 키")
     void cancelPayment_Fail_NotFound() {
-        // given
-        PaymentCancelRequest request = new PaymentCancelRequest("unknown_key", "사유");
+        String paymentKey = "unknown_key";
+        PaymentCancelRequest request = new PaymentCancelRequest(paymentKey, "사유");
 
-        given(paymentRepository.findByPaymentKeyForUpdate("unknown_key")).willReturn(Optional.empty());
+        given(paymentRepository.findByPaymentKeyForUpdate(paymentKey)).willReturn(Optional.empty());
 
-        // when & then
-        assertThatThrownBy(() -> paymentService.cancelPayment("key", request))
+        assertThatThrownBy(() -> paymentService.cancelPayment(paymentKey, request))
                 .isInstanceOf(BusinessException.class)
-                .extracting("errorCode").isEqualTo(ErrorCode.PAYMENT_NOT_FOUND);
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.PAYMENT_NOT_FOUND);
     }
 
     @Test

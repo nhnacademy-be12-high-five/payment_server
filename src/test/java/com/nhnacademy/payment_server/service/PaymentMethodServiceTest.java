@@ -21,7 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-public class PaymentMethodServiceTest {
+class PaymentMethodServiceTest {
     @Mock
     private PaymentMethodRepository paymentMethodRepository;
     @InjectMocks
